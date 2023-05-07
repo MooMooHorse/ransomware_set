@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-05-07T03:51:19.388Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="NAHsY7clHKw4QXGHk0Tx" version="21.2.9" type="github">
+<mxfile host="app.diagrams.net" modified="2023-05-07T03:59:47.292Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="rtsRQNqPiokr-ntdPAoJ" version="21.2.9" type="github">
   <diagram name="Page-1" id="0oWSdbC4oXfueJ1skG5o">
-    <mxGraphModel dx="1434" dy="764" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2284" dy="764" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -10,7 +10,7 @@
         <mxCell id="sWSDrlq6geYxAhUQGkc7-2" value="&lt;h2&gt;Privilege Level&lt;/h2&gt;" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="110" y="80" width="120" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="sWSDrlq6geYxAhUQGkc7-3" value="&lt;h2&gt;RW class (XIP or R-M-W-D)&lt;/h2&gt;" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-3" value="&lt;h2&gt;RW Class&lt;/h2&gt;" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="510" y="80" width="130" height="130" as="geometry" />
         </mxCell>
         <mxCell id="sWSDrlq6geYxAhUQGkc7-4" value="&lt;h2&gt;IO frequency&lt;/h2&gt;" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
@@ -18,6 +18,36 @@
         </mxCell>
         <mxCell id="sWSDrlq6geYxAhUQGkc7-5" value="&lt;h2&gt;Target File Type&lt;/h2&gt;" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;dashed=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
           <mxGeometry x="510" y="450" width="130" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-6" value="RW Class" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="70" width="225" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-7" value="Read then In-place modify" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-6">
+          <mxGeometry x="25" y="38" width="160" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-8" value="Read Encrypt Write in another place&lt;br&gt;&amp;nbsp;Delete Original Copy" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-6">
+          <mxGeometry x="-5" y="100" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-9" value="Privilege Level" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-200" y="70" width="225" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-10" value="sudo (not likely)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-9">
+          <mxGeometry x="50" y="38" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-11" value="Advanced User Group" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-9">
+          <mxGeometry x="35" y="75" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-12" value="Normal User" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-9">
+          <mxGeometry x="60" y="140" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-13" value="IO Frequency" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-210" y="415" width="225" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-14" value="Burst read / write" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-13">
+          <mxGeometry x="50" y="38" width="110" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="sWSDrlq6geYxAhUQGkc7-16" value="Write wait write wait ..." style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-13">
+          <mxGeometry x="25" y="120" width="140" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
