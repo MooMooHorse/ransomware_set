@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-05-07T03:59:47.292Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="rtsRQNqPiokr-ntdPAoJ" version="21.2.9" type="github">
+<mxfile host="app.diagrams.net" modified="2023-05-07T03:59:52.474Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="lYHl-EFrekydkXE9XC9R" version="21.2.9" type="github">
   <diagram name="Page-1" id="0oWSdbC4oXfueJ1skG5o">
     <mxGraphModel dx="2284" dy="764" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -47,7 +47,7 @@
           <mxGeometry x="50" y="38" width="110" height="30" as="geometry" />
         </mxCell>
         <mxCell id="sWSDrlq6geYxAhUQGkc7-16" value="Write wait write wait ..." style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="sWSDrlq6geYxAhUQGkc7-13">
-          <mxGeometry x="25" y="120" width="140" height="30" as="geometry" />
+          <mxGeometry x="35" y="120" width="140" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
