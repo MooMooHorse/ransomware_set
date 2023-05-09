@@ -1,0 +1,95 @@
+haor2@node-0:/mnt/haor2/YCSB$ sudo ./bin/ycsb load rocksdb -s -P workloads/workloadd -p rocksdb.dir=../dd
+[WARN]  Running against a source checkout. In order to get our runtime dependencies we'll have to invoke Maven. Depending on the state of your system, this may take ~30-45 seconds
+[DEBUG]  Running 'mvn -pl site.ycsb:rocksdb-binding -am package -DskipTests dependency:build-classpath -DincludeScope=compile -Dmdep.outputFilterFile=true'
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.google.inject.internal.cglib.core.$ReflectUtils$1 (file:/usr/share/maven/lib/guice.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of com.google.inject.internal.cglib.core.$ReflectUtils$1
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+java -cp /mnt/haor2/YCSB/rocksdb/conf:/mnt/haor2/YCSB/rocksdb/target/rocksdb-binding-0.18.0-SNAPSHOT.jar:/root/.m2/repository/org/apache/htrace/htrace-core4/4.1.0-incubating/htrace-core4-4.1.0-incubating.jar:/root/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar:/root/.m2/repository/net/jcip/jcip-annotations/1.0/jcip-annotations-1.0.jar:/root/.m2/repository/org/hdrhistogram/HdrHistogram/2.1.4/HdrHistogram-2.1.4.jar:/root/.m2/repository/org/codehaus/jackson/jackson-mapper-asl/1.9.4/jackson-mapper-asl-1.9.4.jar:/root/.m2/repository/org/rocksdb/rocksdbjni/6.2.2/rocksdbjni-6.2.2.jar:/root/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.4/jackson-core-asl-1.9.4.jar:/mnt/haor2/YCSB/core/target/core-0.18.0-SNAPSHOT.jar site.ycsb.Client -db site.ycsb.db.rocksdb.RocksDBClient -s -P workloads/workloadd -p rocksdb.dir=../dd -load
+Command line: -db site.ycsb.db.rocksdb.RocksDBClient -s -P workloads/workloadd -p rocksdb.dir=../dd -load
+YCSB Client 0.18.0-SNAPSHOT
+
+Loading workload...
+Starting test.
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2023-02-10 15:21:33:034 0 sec: 0 operations; est completion in 0 second 
+DBWrapper: report latency for each error is false and specific error codes to track for latency are: []
+2023-02-10 15:21:33:180 0 sec: 1000 operations; 5076.14 current ops/sec; [CLEANUP: Count=1, Max=1311, Min=1311, Avg=1311, 90=1311, 99=1311, 99.9=1311, 99.99=1311] [INSERT: Count=1000, Max=1906, Min=14, Avg=26.64, 90=32, 99=121, 99.9=373, 99.99=1906] 
+[OVERALL], RunTime(ms), 197
+[OVERALL], Throughput(ops/sec), 5076.1421319796955
+[TOTAL_GCS_G1_Young_Generation], Count, 0
+[TOTAL_GC_TIME_G1_Young_Generation], Time(ms), 0
+[TOTAL_GC_TIME_%_G1_Young_Generation], Time(%), 0.0
+[TOTAL_GCS_G1_Old_Generation], Count, 0
+[TOTAL_GC_TIME_G1_Old_Generation], Time(ms), 0
+[TOTAL_GC_TIME_%_G1_Old_Generation], Time(%), 0.0
+[TOTAL_GCs], Count, 0
+[TOTAL_GC_TIME], Time(ms), 0
+[TOTAL_GC_TIME_%], Time(%), 0.0
+[CLEANUP], Operations, 1
+[CLEANUP], AverageLatency(us), 1311.0
+[CLEANUP], MinLatency(us), 1311
+[CLEANUP], MaxLatency(us), 1311
+[CLEANUP], 95thPercentileLatency(us), 1311
+[CLEANUP], 99thPercentileLatency(us), 1311
+[INSERT], Operations, 1000
+[INSERT], AverageLatency(us), 26.636
+[INSERT], MinLatency(us), 14
+[INSERT], MaxLatency(us), 1906
+[INSERT], 95thPercentileLatency(us), 40
+[INSERT], 99thPercentileLatency(us), 121
+[INSERT], Return=OK, 1000
+haor2@node-0:/mnt/haor2/YCSB$ sudo ./bin/ycsb run rocksdb -s -P workloads/workloadd -p rocksdb.dir=../dd
+[WARN]  Running against a source checkout. In order to get our runtime dependencies we'll have to invoke Maven. Depending on the state of your system, this may take ~30-45 seconds
+[DEBUG]  Running 'mvn -pl site.ycsb:rocksdb-binding -am package -DskipTests dependency:build-classpath -DincludeScope=compile -Dmdep.outputFilterFile=true'
+WARNING: An illegal reflective access operation has occurred
+WARNING: Illegal reflective access by com.google.inject.internal.cglib.core.$ReflectUtils$1 (file:/usr/share/maven/lib/guice.jar) to method java.lang.ClassLoader.defineClass(java.lang.String,byte[],int,int,java.security.ProtectionDomain)
+WARNING: Please consider reporting this to the maintainers of com.google.inject.internal.cglib.core.$ReflectUtils$1
+WARNING: Use --illegal-access=warn to enable warnings of further illegal reflective access operations
+WARNING: All illegal access operations will be denied in a future release
+java -cp /mnt/haor2/YCSB/rocksdb/conf:/mnt/haor2/YCSB/rocksdb/target/rocksdb-binding-0.18.0-SNAPSHOT.jar:/root/.m2/repository/org/apache/htrace/htrace-core4/4.1.0-incubating/htrace-core4-4.1.0-incubating.jar:/root/.m2/repository/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar:/root/.m2/repository/net/jcip/jcip-annotations/1.0/jcip-annotations-1.0.jar:/root/.m2/repository/org/hdrhistogram/HdrHistogram/2.1.4/HdrHistogram-2.1.4.jar:/root/.m2/repository/org/codehaus/jackson/jackson-mapper-asl/1.9.4/jackson-mapper-asl-1.9.4.jar:/root/.m2/repository/org/rocksdb/rocksdbjni/6.2.2/rocksdbjni-6.2.2.jar:/root/.m2/repository/org/codehaus/jackson/jackson-core-asl/1.9.4/jackson-core-asl-1.9.4.jar:/mnt/haor2/YCSB/core/target/core-0.18.0-SNAPSHOT.jar site.ycsb.Client -db site.ycsb.db.rocksdb.RocksDBClient -s -P workloads/workloadd -p rocksdb.dir=../dd -t
+Command line: -db site.ycsb.db.rocksdb.RocksDBClient -s -P workloads/workloadd -p rocksdb.dir=../dd -t
+YCSB Client 0.18.0-SNAPSHOT
+
+Loading workload...
+Starting test.
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+2023-02-10 15:21:46:590 0 sec: 0 operations; est completion in 0 second 
+DBWrapper: report latency for each error is false and specific error codes to track for latency are: []
+2023-02-10 15:21:46:784 0 sec: 1000 operations; 4132.23 current ops/sec; [READ: Count=952, Max=2361, Min=4, Avg=18.17, 90=27, 99=87, 99.9=473, 99.99=2361] [CLEANUP: Count=1, Max=1870, Min=1870, Avg=1870, 90=1870, 99=1870, 99.9=1870, 99.99=1870] [INSERT: Count=48, Max=712, Min=28, Avg=90.21, 90=155, 99=712, 99.9=712, 99.99=712] 
+[OVERALL], RunTime(ms), 242
+[OVERALL], Throughput(ops/sec), 4132.231404958678
+[TOTAL_GCS_G1_Young_Generation], Count, 0
+[TOTAL_GC_TIME_G1_Young_Generation], Time(ms), 0
+[TOTAL_GC_TIME_%_G1_Young_Generation], Time(%), 0.0
+[TOTAL_GCS_G1_Old_Generation], Count, 0
+[TOTAL_GC_TIME_G1_Old_Generation], Time(ms), 0
+[TOTAL_GC_TIME_%_G1_Old_Generation], Time(%), 0.0
+[TOTAL_GCs], Count, 0
+[TOTAL_GC_TIME], Time(ms), 0
+[TOTAL_GC_TIME_%], Time(%), 0.0
+[READ], Operations, 952
+[READ], AverageLatency(us), 18.169117647058822
+[READ], MinLatency(us), 4
+[READ], MaxLatency(us), 2361
+[READ], 95thPercentileLatency(us), 41
+[READ], 99thPercentileLatency(us), 87
+[READ], Return=OK, 952
+[CLEANUP], Operations, 1
+[CLEANUP], AverageLatency(us), 1870.0
+[CLEANUP], MinLatency(us), 1870
+[CLEANUP], MaxLatency(us), 1870
+[CLEANUP], 95thPercentileLatency(us), 1870
+[CLEANUP], 99thPercentileLatency(us), 1870
+[INSERT], Operations, 48
+[INSERT], AverageLatency(us), 90.20833333333333
+[INSERT], MinLatency(us), 28
+[INSERT], MaxLatency(us), 712
+[INSERT], 95thPercentileLatency(us), 309
+[INSERT], 99thPercentileLatency(us), 712
+[INSERT], Return=OK, 48
