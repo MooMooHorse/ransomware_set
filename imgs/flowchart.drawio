@@ -1,9 +1,47 @@
-<mxfile host="app.diagrams.net" modified="2023-05-10T16:29:36.594Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" version="21.2.9" etag="TlqmzuaTBliGDYBOU13l" type="github">
+<mxfile host="app.diagrams.net" modified="2023-05-10T17:31:34.106Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36" etag="o_0erwAuT_aCrGzwWtkY" version="21.2.9" type="github">
   <diagram name="Page-1" id="K0Dp44d1ijS5Z0hwcY9W">
-    <mxGraphModel>
+    <mxGraphModel dx="2074" dy="1124" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="hxEO5rcAYuu_mevP24YP-1" value="hello.doc" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="80" y="250" width="200" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-2" value="Hello, World" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="95" y="278" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-3" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="300" y="360" as="sourcePoint" />
+            <mxPoint x="390" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-9" value="add magic number" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="hxEO5rcAYuu_mevP24YP-3">
+          <mxGeometry x="-0.4222" y="1" relative="1" as="geometry">
+            <mxPoint x="14" y="-19" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-4" value="MAGIC_1 hello.doc MAGIC_1" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="1">
+          <mxGeometry x="410" y="250" width="200" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-5" value="MAGIC_2 Hello, Wolrd MAGIC_2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="hxEO5rcAYuu_mevP24YP-4">
+          <mxGeometry x="-5" y="48" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-6" value="" style="shape=flexArrow;endArrow=classic;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="650" y="360" as="sourcePoint" />
+            <mxPoint x="740" y="360" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-7" value="_____.-----" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="1">
+          <mxGeometry x="780" y="250" width="205" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-8" value="MAGIC_3 xxxxxxxxxxxx MAGIC_3&lt;br&gt;&lt;br&gt;Note : MAGIC_3 should be &lt;br&gt;added by (our) testing ransomware" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="hxEO5rcAYuu_mevP24YP-7">
+          <mxGeometry x="-5" y="28" width="210" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="hxEO5rcAYuu_mevP24YP-10" value="after ransomware" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
+          <mxGeometry x="690" y="330" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
