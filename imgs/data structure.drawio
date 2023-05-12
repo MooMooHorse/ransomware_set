@@ -1,11 +1,11 @@
-<mxfile host="app.diagrams.net" modified="2023-05-12T17:05:18.649Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36" etag="p9gKBfoJa5b22dDuszTp" version="21.2.9" type="github">
+<mxfile host="app.diagrams.net" modified="2023-05-12T20:23:46.277Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36" etag="gzy-BRLymYy3ww-ot-6L" version="21.2.9" type="github">
   <diagram name="Page-1" id="gcPHQo3pj2VM8DZ63rwu">
     <mxGraphModel dx="3164" dy="1124" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="gHEQGVByRe57avZ87eo9-15" value="test_framework_t" style="swimlane;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="60" y="390" width="200" height="140" as="geometry" />
+          <mxGeometry x="60" y="390" width="200" height="170" as="geometry" />
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-17" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;tar_sys_info&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="gHEQGVByRe57avZ87eo9-15" vertex="1">
           <mxGeometry y="20" width="200" height="30" as="geometry" />
@@ -18,6 +18,9 @@
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-21" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;stat_BIO&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="gHEQGVByRe57avZ87eo9-15" vertex="1">
           <mxGeometry y="110" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="kOancPXgn7Ha5G_8EjW3-1" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;stat_recovery&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="gHEQGVByRe57avZ87eo9-15">
+          <mxGeometry y="140" width="200" height="30" as="geometry" />
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-22" value="tar_sys_info_t" style="swimlane;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="470" y="70" width="200" height="200" as="geometry" />
@@ -37,7 +40,7 @@
         <mxCell id="Kcq0ukiS3j4PABtyZiL3-1" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;MAGIC numbers&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="gHEQGVByRe57avZ87eo9-22" vertex="1">
           <mxGeometry y="170" width="200" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-1" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;file_len_distribution&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="gHEQGVByRe57avZ87eo9-22">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-1" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;file_len_distribution&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="gHEQGVByRe57avZ87eo9-22" vertex="1">
           <mxGeometry y="110" width="200" height="30" as="geometry" />
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="gHEQGVByRe57avZ87eo9-17" target="gHEQGVByRe57avZ87eo9-23" edge="1">
@@ -79,7 +82,7 @@
           <mxGeometry y="50" width="200" height="30" as="geometry" />
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-55" value="stat_BIO" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" parent="1" vertex="1">
-          <mxGeometry x="550" y="850" width="200" height="80" as="geometry" />
+          <mxGeometry x="530" y="760" width="200" height="80" as="geometry" />
         </mxCell>
         <mxCell id="gHEQGVByRe57avZ87eo9-56" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;# encrypted bytes&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="gHEQGVByRe57avZ87eo9-55" vertex="1">
           <mxGeometry y="20" width="200" height="30" as="geometry" />
@@ -125,41 +128,53 @@
         <mxCell id="gHEQGVByRe57avZ87eo9-84" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="gHEQGVByRe57avZ87eo9-34" target="gHEQGVByRe57avZ87eo9-80" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-11" value="sanity_check_t" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-11" value="sanity_check_t" style="swimlane;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-610" y="310" width="200" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-17" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;rans_info&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="Ala8aXPK8FOhygebUdYG-11">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-17" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;rans_info&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="Ala8aXPK8FOhygebUdYG-11" vertex="1">
           <mxGeometry y="20" width="200" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="Ala8aXPK8FOhygebUdYG-17" target="gHEQGVByRe57avZ87eo9-35">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="Ala8aXPK8FOhygebUdYG-17" target="gHEQGVByRe57avZ87eo9-35" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-20" value="stat_ops_backup" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="1">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-20" value="stat_ops_backup" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" parent="1" vertex="1">
           <mxGeometry x="930" y="720" width="200" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-21" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;encrypted files distr.&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="Ala8aXPK8FOhygebUdYG-20">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-21" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;encrypted files distr.&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="Ala8aXPK8FOhygebUdYG-20" vertex="1">
           <mxGeometry y="20" width="200" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-22" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;encrypted directories distr.&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="Ala8aXPK8FOhygebUdYG-20">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-22" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;encrypted directories distr.&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" parent="Ala8aXPK8FOhygebUdYG-20" vertex="1">
           <mxGeometry y="50" width="200" height="30" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-23" value="sanity_check_t (note)" style="swimlane;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-23" value="sanity_check_t (note)" style="swimlane;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="-610" y="450" width="200" height="140" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-24" value="In windows, we can collect&lt;br&gt;&amp;nbsp;data of real ransomware &lt;br&gt;to verify that &lt;br&gt;our standardized ransomware &lt;br&gt;makes sense.&amp;nbsp;&lt;br&gt;This data is collected in &lt;b&gt;FS filter&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="Ala8aXPK8FOhygebUdYG-23">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-24" value="In windows, we can collect&lt;br&gt;&amp;nbsp;data of real ransomware &lt;br&gt;to verify that &lt;br&gt;our standardized ransomware &lt;br&gt;makes sense.&amp;nbsp;&lt;br&gt;This data is collected in &lt;b&gt;FS filter&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" parent="Ala8aXPK8FOhygebUdYG-23" vertex="1">
           <mxGeometry y="30" width="200" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-25" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ala8aXPK8FOhygebUdYG-23" target="Ala8aXPK8FOhygebUdYG-17">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-25" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;exitX=0.25;exitY=0;exitDx=0;exitDy=0;" parent="1" source="Ala8aXPK8FOhygebUdYG-23" target="Ala8aXPK8FOhygebUdYG-17" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="-570" y="430" as="sourcePoint" />
             <mxPoint x="-520" y="380" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="Ala8aXPK8FOhygebUdYG-26" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="Ala8aXPK8FOhygebUdYG-23" target="Ala8aXPK8FOhygebUdYG-11">
+        <mxCell id="Ala8aXPK8FOhygebUdYG-26" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;exitX=0.75;exitY=0;exitDx=0;exitDy=0;" parent="1" source="Ala8aXPK8FOhygebUdYG-23" target="Ala8aXPK8FOhygebUdYG-11" edge="1">
           <mxGeometry width="50" height="50" relative="1" as="geometry">
             <mxPoint x="-470" y="440" as="sourcePoint" />
             <mxPoint x="-420" y="390" as="targetPoint" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="kOancPXgn7Ha5G_8EjW3-2" value="stat_recovery" style="swimlane;whiteSpace=wrap;html=1;startSize=23;" vertex="1" parent="1">
+          <mxGeometry x="-260" y="610" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="kOancPXgn7Ha5G_8EjW3-3" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;# of files recoverable files&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="kOancPXgn7Ha5G_8EjW3-2">
+          <mxGeometry y="20" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="kOancPXgn7Ha5G_8EjW3-4" value="&lt;font face=&quot;Georgia&quot;&gt;&lt;b&gt;# of inconsistent files&lt;/b&gt;&lt;/font&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="kOancPXgn7Ha5G_8EjW3-2">
+          <mxGeometry y="50" width="200" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="kOancPXgn7Ha5G_8EjW3-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="kOancPXgn7Ha5G_8EjW3-1" target="kOancPXgn7Ha5G_8EjW3-3">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
