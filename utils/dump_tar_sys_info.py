@@ -50,4 +50,4 @@ if len(sys.argv) == 7:
         file.write(" ".join(file_type_set_3))
 
 # dump access
-os.system(f"python3 utils/dump_access.py {sys.argv[2]} {tar_sys_info_path}")
+# os.system(f"python3 utils/dump_access.py {sys.argv[2]} {tar_sys_info_path}")

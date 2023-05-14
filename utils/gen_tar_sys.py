@@ -7,8 +7,8 @@ import shutil
 from access import make_assignment, clean_up_groups_users
 
 # Check if correct input format is provided
-if len(sys.argv) != 6:
-    print("Usage: python generate_tar_sys.py <number of files> <median length of files> <file type set> <output directory> <framework directory>")
+if len(sys.argv) != 9:
+    print("Usage: python generate_tar_sys.py <number of files> <median length of files> <file type set> <output directory> <framework directory> <number of groups> <number of users> <number of permissions>")
     sys.exit(1)
 
 # Create the output directory if it doesn't exist
@@ -75,11 +75,9 @@ for file_name in file_names:
 # After having heirarchical structure, we need to set up the number of user groups and different users and assign them to different files and directories
 tar_sys_path = sys.argv[4]
 framework_dir = sys.argv[5]
-# We prompt user to input the number of user groups, and the number of users in each group, separated by space
-print("Please input the number of user groups, and the number of users in each group, separated by space:")
-num_groups, num_users = input().split()
-num_groups = int(num_groups)
-num_users = int(num_users)
+
+num_groups = int(sys.argv[6])
+num_users = int(sys.argv[7])
 
 # if access directory does not exist, create it
 if not os.path.isdir(os.path.join(framework_dir, "access")):
@@ -108,8 +106,9 @@ for root, dirs, files in os.walk(tar_sys_path):
         file_set.append(os.path.relpath(os.path.join(root, file), framework_dir))
 
 print(f"Number of files in {tar_sys_path}: {len(file_set)}")
-print("please select the number of different permissions (1 ~ 10):")
-num_permissions = int(input())
+
+num_permissions = int(sys.argv[8])
+print(f"Number of permissions: {num_permissions}")
 
 # We randomly select num_permissions number of permissions
 
