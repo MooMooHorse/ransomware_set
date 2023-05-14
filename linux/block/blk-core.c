@@ -1210,19 +1210,22 @@ blk_qc_t submit_bio(struct bio *bio)
 				(unsigned long long)bio->bi_iter.bi_sector,
 				bio_devname(bio, b), count);
 		}
+		
 
-		if (byte_fs_checkif_test_ssd(bio)) {
-			// printk(KERN_ERR "rua!\n");
-			// byte_fs_print_bio_disk(bio);
-			int ret = byte_fs_bio_issue(bio);
-			if(ret==-EBUSY){			
-				bio_wouldblock_error(bio);
-			}else if (ret<0) {
-				bio_io_error(bio);
-			}
-			return BLK_QC_T_NONE;
-			// nvme_issue(op_is_write(bio_op(bio)), bio->bi_iter.bi_sector/4, bio->bi_iter.bi_size/4096, kmap(bio->bi_io_vec->bv_page)); //lyq
-		}
+
+		// below are for byte fs project
+		// if (byte_fs_checkif_test_ssd(bio)) {
+		// 	// printk(KERN_ERR "rua!\n");
+		// 	// byte_fs_print_bio_disk(bio);
+		// 	int ret = byte_fs_bio_issue(bio);
+		// 	if(ret==-EBUSY){			
+		// 		bio_wouldblock_error(bio);
+		// 	}else if (ret<0) {
+		// 		bio_io_error(bio);
+		// 	}
+		// 	return BLK_QC_T_NONE;
+		// 	// nvme_issue(op_is_write(bio_op(bio)), bio->bi_iter.bi_sector/4, bio->bi_iter.bi_size/4096, kmap(bio->bi_io_vec->bv_page)); //lyq
+		// }
 	}
 	return generic_make_request(bio);
 }
