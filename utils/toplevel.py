@@ -18,6 +18,7 @@ sys.path.append(parent_dir)
 
 from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS
+from preprocess import preprocess_tar_sys
 
 framework_dir = PATHS["framework_dir"]
 tar_sys_info_path = PATHS["tar_sys_info_path"]
@@ -87,5 +88,6 @@ print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path =
 input_val = input()
 if input_val != "y":
     sys.exit(0)
-
+    
+preprocess_tar_sys(tar_sys_path)
 
