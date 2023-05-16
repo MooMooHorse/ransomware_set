@@ -5,6 +5,13 @@ import time
 import json
 
 framework_dir = "rans_test"
+
+BOOT_CONFIG = {
+    "blktrace_dir" : "blktrace_dir",
+    "default_disk" : "/dev/vdb",
+    "default_trace_file_path" : "blktrace_dir/tracefile",
+}
+
 # A set of paths used in the framework
 PATHS = {
     "framework_dir": "rans_test",

@@ -23,7 +23,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-from config import MAGIC_NUM
+from config import BOOT_CONFIG, MAGIC_NUM
 
 def add_magic_num_1(tar_sys_path):
     """
@@ -69,10 +69,32 @@ def add_magic_num_3(tar_sys_path):
                 for byte in data:
                     f.write(bytes([MAGIC_NUM["MAGIC_NUM3"]]))
 
+def launch_blktrace():
+    default_disk = BOOT_CONFIG["default_disk"]
+    default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
+    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+
+    # Create blktrace_dir if not exists
+    if not os.path.isdir(blktrace_dir):
+        os.mkdir(blktrace_dir)
+
+    import subprocess
+
+    def _launch_blktrace(device, output_file):
+        command = ['sudo', 'blktrace', '-d', device, '-o', output_file]
+        return subprocess.Popen(command)
+
+    blktrace_process_pid = _launch_blktrace(default_disk, default_trace_file_path).pid + 1
+
+    # dump blktrace_process.pid to a file
+    with open(f"{blktrace_dir}/blktrace_pid", "w+") as f:
+        f.write(f"{blktrace_process_pid}")
+
 def preprocess_tar_sys(tar_sys_path):
     """
     Add magic number to the target system
     """
+    launch_blktrace()
     add_magic_num_1(tar_sys_path)
     add_magic_num_2(tar_sys_path)
     add_magic_num_3(tar_sys_path)
