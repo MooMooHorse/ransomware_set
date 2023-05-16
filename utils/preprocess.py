@@ -17,6 +17,8 @@ import os
 import shutil
 import sys
 
+WAIT_TIME_SEC = 0.2
+
 # Get the parent directory path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -44,7 +46,6 @@ def add_magic_num_1(tar_sys_path):
                 f.write(bytes([MAGIC_NUM["MAGIC_NUM1_02"]]))
                 f.write(bytes([MAGIC_NUM["MAGIC_NUM1_03"]]))
                 f.write(bytes([MAGIC_NUM["MAGIC_NUM1_04"]]))
-                f.flush()
 
 def add_magic_num_2(tar_sys_path):
     """
@@ -69,7 +70,6 @@ def add_magic_num_3(tar_sys_path):
             with open(os.path.join(root, file), "wb") as f:
                 for byte in data:
                     f.write(bytes([MAGIC_NUM["MAGIC_NUM3"]]))
-                f.flush()
 
 def launch_blktrace():
     default_disk = BOOT_CONFIG["default_disk"]
@@ -87,6 +87,9 @@ def launch_blktrace():
         # get the current path 
         path = os.getcwd()
         process = subprocess.Popen(command, cwd = path)
+        # wait for 0.01 seconds to make sure blktrace is launched
+        import time
+        time.sleep(WAIT_TIME_SEC)
         return process
 
     blktrace_process_pid = _launch_blktrace(default_disk, default_trace_file_path).pid + 1
@@ -107,9 +110,9 @@ def dump_trace_file():
         command = ['sudo', 'blkparse', '-i', trace_file, '-f', '%T %S %3d\n', '-o', output_file]
         path = os.getcwd()
         process = subprocess.run(command, cwd = path)
-    # sleep for 0.2 seconds to make sure blktrace is shut down
+    # sleep for 0.01 seconds to make sure blktrace is shut down
     import time
-    time.sleep(0.2)
+    time.sleep(WAIT_TIME_SEC)
     _launch_blkparse(default_trace_file_path, f"{blktrace_dir}/blkparse_output")
     # now we can remove the trace files
     # os.system(f"sudo rm {default_trace_file_path}*")
@@ -122,6 +125,16 @@ def files_sync(tar_sys_path):
     Sync all the files in target system to disk
     Refer to https://stackoverflow.com/questions/15983272/does-python-have-sync
     """
+    current_dir = os.getcwd()
+    print(f"Syncing files in {current_dir} / {tar_sys_path} to disk...")
+    # iterate through all the files in the target system and flush them
+    for root, dirs, files in os.walk(tar_sys_path):
+        for file in files:
+            with open(os.path.join(root, file), "rb") as f:
+                f.flush()
+
+    # Before we flushed the internal buffers of all the files in the target system, now we need to sync the file system buffers to disk
+    
     if hasattr(os, 'sync'):
         sync = os.sync
     else:
