@@ -44,5 +44,5 @@ MAGIC_NUM = {
     "MAGIC_NUM2_03" : 0xba,
     "MAGIC_NUM2_04" : 0x23,
     # Magic number 3 is for each byte of the file data
-    "MAGIC_NUM3" : 0x14,
+    "MAGIC_NUM3" : 0x41,
 }
