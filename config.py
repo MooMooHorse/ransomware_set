@@ -10,6 +10,8 @@ BOOT_CONFIG = {
     "blktrace_dir" : "blktrace_dir",
     "default_disk" : "/dev/vdb",
     "default_trace_file_path" : "blktrace_dir/tracefile",
+    "core_dir" : "core_dir",
+    "trace_path" : "blktrace_dir/blkparse_output"
 }
 
 # A set of paths used in the framework
@@ -46,3 +48,34 @@ MAGIC_NUM = {
     # Magic number 3 is for each byte of the file data
     "MAGIC_NUM3" : 0x41,
 }
+
+def main():
+    args = []
+    default_trace_file_path = BOOT_CONFIG["trace_path"]
+    default_disk = BOOT_CONFIG["default_disk"]
+    core_dir = BOOT_CONFIG["core_dir"]
+    magic1 = ((MAGIC_NUM["MAGIC_NUM1_01"] << 24) + (MAGIC_NUM["MAGIC_NUM1_02"] << 16) + 
+                (MAGIC_NUM["MAGIC_NUM1_03"] << 8) + (MAGIC_NUM["MAGIC_NUM1_04"]))
+    magic2 = ((MAGIC_NUM["MAGIC_NUM2_01"] << 24) + (MAGIC_NUM["MAGIC_NUM2_02"] << 16) + 
+        (MAGIC_NUM["MAGIC_NUM2_03"] << 8) + (MAGIC_NUM["MAGIC_NUM2_04"]))
+    magic3 = MAGIC_NUM["MAGIC_NUM3"]
+    for arg in sys.argv[1:]:
+        if arg.startswith("-tfp"): # dump default_trace_file_path
+            args.append(f"{default_trace_file_path}")
+        elif arg.startswith("-dd"): # dump default_disk
+            args.append(f"{default_disk}")
+        elif arg.startswith("-cd"): # dump core_dir
+            args.append(f"{core_dir}")
+        elif arg.startswith("-ma"): # all magic numbers
+            args.append(f"{magic1} {magic2} {magic3}")
+        elif arg.startswith("-xma"): # all magic numbers in hex
+            args.append(f"{hex(magic1)} {hex(magic2)} {hex(magic3)}")
+        else:
+            print("Invalid flag:", arg)
+            sys.exit(1)
+    return args
+
+if __name__ == "__main__":
+    args = main()
+    # dump args delimited by space
+    print(" ".join(args))

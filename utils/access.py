@@ -2,6 +2,12 @@ import os
 import shutil
 import sys
 
+ENABLE_DEBUG = False
+
+def debug(*args, **kwargs):
+    if ENABLE_DEBUG:
+        print(*args, **kwargs)
+
 
 def rm_groups(output_dir):
     # remove all groups recorded in <output_directory>/access/groups from linux
@@ -75,7 +81,7 @@ def make_assignment(framework_dir_path, assignment_path):
                         # if not, create the user without password with sudo
                         os.system(f"sudo useradd {user_name}")
 
-            print(f"Time to create users and groups: {time.time() - start_time}")
+            debug(f"Time to create users and groups: {time.time() - start_time}")
 
             start_time = time.time()
             
@@ -99,6 +105,7 @@ def make_assignment(framework_dir_path, assignment_path):
                 user_permissions = [user.split("(")[1][:-1] for user in users]
                 user_name_and_permissions = ",".join([f"u:{user_names[i]}:{user_permissions[i]}" for i in range(len(user_names))])
                 os.system(f"sudo setfacl -m {user_name_and_permissions} {abs_path}")
-            print(f"Time to assign users and groups: {time.time() - start_time}")
+                
+            debug(f"Time to assign users and groups: {time.time() - start_time}")
             
 

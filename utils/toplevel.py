@@ -93,3 +93,5 @@ if input_val != "y":
 
 preprocess_tar_sys(tar_sys_path)
 
+os.system("./core")
+

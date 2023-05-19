@@ -1,9 +1,9 @@
 CXX = g++
 CXXFLAGS = -Wall -Werror
-SRCDIR = core
+SRCDIR = utils/core
 SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS = $(SOURCES:.cpp=.o)
-EXECUTABLE = myprogram
+EXECUTABLE = core
 
 all: $(EXECUTABLE)
 

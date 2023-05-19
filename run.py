@@ -76,6 +76,7 @@ os.system(f"sudo chown -R {os.getlogin()} {mount_path}")
 # copy utils and config.py to mount_path
 shutil.copytree("ransomware_set/utils", f"{mount_path}/utils")
 shutil.copy("ransomware_set/config.py", f"{mount_path}/config.py")
+shutil.copy("ransomware_set/core", f"{mount_path}/core")
 
 # cd to utils directory
 os.chdir(f"{mount_path}/utils")
@@ -86,3 +87,4 @@ os.system("whoami")
 
 # run the toplevel.py script
 os.system(f"python3 toplevel.py")
+

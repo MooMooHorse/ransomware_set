@@ -105,7 +105,7 @@ def dump_trace_file():
     # now we can remove the trace files
     # os.system(f"sudo rm {default_trace_file_path}*")
     # now we re-launch blktrace
-    launch_blktrace()
+    # launch_blktrace()
     
 
 def files_sync(tar_sys_path):
@@ -171,7 +171,7 @@ def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
 def parse_trace_file():
     default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
     blktrace_dir = BOOT_CONFIG["blktrace_dir"]
-    trace_path = f"{blktrace_dir}/blkparse_output"
+    trace_path = BOOT_CONFIG["trace_path"]
     dump_path = f"{blktrace_dir}/dump"
     device_path = BOOT_CONFIG["default_disk"]
 
@@ -215,6 +215,6 @@ def preprocess_tar_sys(tar_sys_path):
     add_magic_num_2(tar_sys_path)
     files_sync(tar_sys_path)
     dump_trace_file()
-    parse_trace_file()
+    # parse_trace_file()
 
     
