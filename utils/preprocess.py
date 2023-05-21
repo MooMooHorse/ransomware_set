@@ -25,7 +25,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-from config import BOOT_CONFIG, MAGIC_NUM
+from config import BOOT_CONFIG, MAGIC_NUM, PATHS
 
 def add_magic_num_1_3(tar_sys_path):
     """
@@ -87,6 +87,9 @@ def launch_blktrace():
         f.write(f"{blktrace_process_pid}")
 
 def dump_trace_file():
+    """
+    Cloase the blktrace program and dump the trace to output file
+    """
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
     default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
@@ -106,6 +109,12 @@ def dump_trace_file():
     # os.system(f"sudo rm {default_trace_file_path}*")
     # now we re-launch blktrace
     # launch_blktrace()
+
+def clear_trace_file():
+    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+    # clear the blktrace_dir
+    if os.path.isdir(blktrace_dir):
+        shutil.rmtree(blktrace_dir)
     
 
 def files_sync(tar_sys_path):
@@ -214,7 +223,50 @@ def preprocess_tar_sys(tar_sys_path):
     add_magic_num_1_3(tar_sys_path)
     add_magic_num_2(tar_sys_path)
     files_sync(tar_sys_path)
-    dump_trace_file()
+    dump_trace_file() # it will implicitly close the blktrace
     # parse_trace_file()
 
-    
+def _run_ransomware():
+    """
+    Ransomware should be an executable file in the ransomware directory.
+    It will only encrypte the files in the target system.
+    """
+    print("Running ransomware...")
+    pass
+
+def run_ransomware(tar_sys_path):
+    """
+    Enable the blk trace, run ransomware, then close the blk trace
+    """
+    clear_trace_file()
+    files_sync(tar_sys_path)
+    launch_blktrace()
+    _run_ransomware()
+    dump_trace_file() # it will implicitly close the blktrace
+
+def main():
+    """
+    This file mostly is called by toplevel, it's also called by C++ core framework.
+    When the latter is the case, -run flag is passed, so we 
+    1. clear the trace file. (we no longer need the old trace file because C++ core has already parsed it)
+    1.5 run the blktrace
+    2. run ransomware
+    2.5 close the blktrace
+    3. dump the trace file 
+    4. then we go back to the C++ core framework by terminating this process
+    note : 4. also implies that in C++ framework, we need to wait for this process to terminate before we can continue
+    """
+    for arg in sys.argv[1:]:
+        if arg.startswith("-run"):
+            # This should be executed in the parent directory of the file, do a sanity check here
+            if not os.path.isdir("rans_test"):
+                print("Please run this script in the parent directory of rans_test directory")
+                sys.exit(1)
+            tar_sys_path = PATHS["tar_sys_path"]
+            run_ransomware(tar_sys_path)
+        else:
+            print("Invalid flag:", arg)
+            sys.exit(1)
+
+if __name__ == '__main__':
+    main()
