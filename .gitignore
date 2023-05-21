@@ -1,3 +1,4 @@
 # to show which files will be excluded, use git clean -Xnd
 **/__pycache__/
 **/*.o
+**/.vscode/
