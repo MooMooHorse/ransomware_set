@@ -262,6 +262,7 @@ void BIO_Cache::flush() {
             this->encrypted_len += ceh->encrypted;
             this->unencrypted_len += ceh->unencrypted;
         }
+        // update status bar
         if( (cur_sectors + r - l + 1) * 100 / total_sectors - (cur_sectors) * 100 / total_sectors > 0) {
             std::string status = "[";
             for(uint64_t i = 0; i < (cur_sectors + r - l + 1) * 10 / total_sectors; i++) {
