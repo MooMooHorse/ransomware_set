@@ -221,9 +221,8 @@ int BIO_Cache::get_unencrpted(const std::vector<char>& buf, uint64_t sec_off) {
  */
 void BIO_Cache::flush() {
     printf("flushing all the requests...\n");
-#if (CH_DEBUG_TYPE & CH_FLUSH_DEBUG)
-    uint64_t numflushed = 0;
-#endif
+    uint64_t total_sectors = this->cached_list.size();
+    uint64_t cur_sectors = 0;
     while(!this->cached_list.empty()) {
         // iterate through the priority queue until the first element that's not continuous to the previous one
         // and remove all the elements in the cached list
@@ -243,9 +242,6 @@ void BIO_Cache::flush() {
         }
         std::vector<char> data(SEC_TO_BYTES(r - l + 1));
         readDataIntoVector(data, this->deviceName, l, r - l + 1);
-#if (CH_DEBUG_TYPE & CH_FLUSH_DEBUG)
-        numflushed += data.size();
-#endif
 
         // for each sector(node on rb tree), we find the node, chanage if_cache
         // and update the encrypted and unencrypted bytes
@@ -254,9 +250,6 @@ void BIO_Cache::flush() {
             CH_debug("rb_search failed\n");
             return;
         }
-#if (CH_DEBUG_TYPE & CH_FLUSH_DEBUG)
-        printf("--current interval: [%lu, %lu]\n", l, r);
-#endif
         for(i = node; i && get_ceh(i)->l <= r; i = rb_next(i)) {
             cache_entry_t* ceh = get_ceh(i);
             ceh->is_cache = 0;
@@ -269,12 +262,24 @@ void BIO_Cache::flush() {
             this->encrypted_len += ceh->encrypted;
             this->unencrypted_len += ceh->unencrypted;
         }
-#if (CH_DEBUG_TYPE & CH_FLUSH_DEBUG)
-        printf("flushed %lu bytes\n", numflushed);
-        printf("current interval: [%lu, %lu]\n", l, r);
-#endif
+        if( (cur_sectors + r - l + 1) * 100 / total_sectors - (cur_sectors) * 100 / total_sectors > 0) {
+            std::string status = "[";
+            for(uint64_t i = 0; i < (cur_sectors + r - l + 1) * 10 / total_sectors; i++) {
+                status += "=";
+            }
+            status += ">";
+            // pad to 10
+            for(uint64_t i = (cur_sectors + r - l + 1) * 10 / total_sectors + 1; i < 10; i++) {
+                status += " ";
+            }
+            status += "]";
+
+            std::cout << "flushed " << " " << status << " " << (cur_sectors + r - l + 1) * 100 / total_sectors << "%\r" << std::flush;
+        }
+        cur_sectors += (r - l + 1);
 
     }
+    std::cout << "............All flushed............" << std::endl;
     this->debug.dump_rans();
 }
 
