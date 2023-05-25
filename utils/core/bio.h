@@ -18,7 +18,7 @@
 #define CH_BASIC_DEBUG         (1<<0)
 #define CH_CACHE_DEBUG         (1<<1)    // used for BIO caching related
 #define CH_FLUSH_DEBUG         (1<<2)    // used for BIO flushing related
-#define CH_DEBUG_TYPE          (CH_BASIC_DEBUG | CH_FLUSH_DEBUG)
+#define CH_DEBUG_TYPE          (CH_BASIC_DEBUG)
 
 // define our debug printk : this does nothing when we're at particular debug level
 #if (CH_DEBUG_TYPE != CH_NO_DEBUG)
@@ -40,6 +40,64 @@ typedef struct CACHE_ENTRY {
     // real number of bytes encrypted and unencrypted in a sector
     struct rb_node node;
 } cache_entry_t;
+
+class BIO_debug {
+private:
+    int BIO_hit; // how many times BIO cache is hit
+    int BIO_hit_empty; // how many times BIO cache is hit but original cache entry does not contain related info
+    int BIO_hit_encrpted, BIO_hit_unencrypted; // how many encrypted and unencrypted bytes are overwritten by BIO hit
+    int rans_en; // if ransomware has been enabled
+    int rans_overwrite; // how many unencrypted bytes are overwritten by ranswomare at flush time
+    int snapshot_encrypted, snapshot_unencrypted; // how many encrypted and unencrypted bytes are overwritten by snapshot
+public:
+    BIO_debug() : BIO_hit(0), BIO_hit_empty(0), BIO_hit_encrpted(0),
+     BIO_hit_unencrypted(0), rans_en(0), rans_overwrite(0) {}
+    void clear() {
+        this->BIO_hit = 0;
+        this->BIO_hit_empty = 0;
+        this->BIO_hit_encrpted = 0;
+        this->BIO_hit_unencrypted = 0;
+        this->rans_en = 0;
+        this->rans_overwrite = 0;
+    }
+    void enable_rans() {
+        this->rans_en = 1;
+    }
+    void rans_overwrite_bytes(int bytes) {
+        this->rans_overwrite += bytes;
+    }
+    void add_hit() {
+        this->BIO_hit++;
+    }
+    void hit_empty() {
+        this->BIO_hit_empty++;
+    }
+    void hit_encrypted(int len) {
+        this->BIO_hit_encrpted += len;
+    }
+    void hit_unencrypted(int len) {
+        this->BIO_hit_unencrypted += len;
+    }
+    void snapshot(int64_t encrypted, int64_t unencrypted) {
+        this->snapshot_encrypted = encrypted;
+        this->snapshot_unencrypted = unencrypted;
+    }
+    void dump_rans() {
+        if(this->rans_en){
+            std::cout << "rans_en: " << this->rans_en << std::endl;
+            std::cout << "rans_overwrite: " << this->rans_overwrite << std::endl;
+            std::cout << "bio hit " << this->BIO_hit << std::endl;
+            std::cout << "bio hit empty " << this->BIO_hit_empty << std::endl;
+            std::cout << "encrypted hit length (bytes) " << this->BIO_hit_encrpted << std::endl;
+            std::cout << "unencrypted hit length (bytes) " << this->BIO_hit_unencrypted << std::endl;
+        }
+    }
+    void dump_snapshot() {
+        std::cout << "snapshot_encrypted snapshot_unencrypted" << std::endl;
+        std::cout << this->snapshot_encrypted << " " << this->snapshot_unencrypted << std::endl;
+    }
+
+};
 
 class BIO_Cache {
 private:
@@ -69,8 +127,10 @@ public:
     int64_t cache(uint64_t l, uint64_t r);
     void flush();
     void report();
+    void snapshot();
 
     // debug
+    BIO_debug debug;
     int sanity_check();
 private:
     int64_t rb_tree_alloc_and_insert(struct rb_root* root, uint64_t l, struct rb_node** node, 

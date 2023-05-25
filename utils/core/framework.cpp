@@ -42,6 +42,13 @@ public:
         this->cache->flush();
         this->cache->report();
         launch_ransomware();
+        this->cache->debug.clear();
+        this->cache->debug.enable_rans();
+        cache_BIO();
+        this->cache->flush();
+        this->cache->report();
+        this->cache->snapshot();
+        this->cache->debug.dump_snapshot();
     }
 private:
     /**

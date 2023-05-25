@@ -14,6 +14,16 @@ BOOT_CONFIG = {
     "trace_path" : "blktrace_dir/blkparse_output"
 }
 
+# a set of chosen file system types
+FS_EXT4 = 0
+FS_NTFS = 1
+
+MOUNT_CONFIG = {
+    'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd'],
+    'fs_types' : ['ext4', 'ntfs'],
+    'cfs_type' : FS_NTFS,
+}
+
 # A set of paths used in the framework
 PATHS = {
     "framework_dir": "rans_test",

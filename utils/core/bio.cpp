@@ -44,18 +44,6 @@ void BIO_Cache::_cache_insert(cache_entry_t* ceh) {
     this->unencrypted_len += ceh->unencrypted;
 }
 
-// remove overlapping @param len from corresponding length
-void BIO_Cache::_cache_remove(cache_entry_t* ceh) {
-    this->num_entries--;
-    this->encrypted_len -= ceh->encrypted;
-    this->unencrypted_len -= ceh->unencrypted;
-    ceh->encrypted = 0;
-    ceh->unencrypted = 0;
-}
-
-
-
-
 int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t l, struct rb_node** node, 
 uint64_t size) {
     struct rb_node** _new;
@@ -80,16 +68,22 @@ uint64_t size) {
         } else if(l > ceh->l) {
             _new = &((*_new)->rb_right);
         } else {
+            this->debug.add_hit();
             if(ceh->is_cache == 0) {
+                this->debug.hit_encrypted(ceh->encrypted);
+                this->debug.hit_unencrypted(ceh->unencrypted);
                 ceh->is_cache = 1;
+                this->cached_list.push(ceh->l);
                 this->num_cached++;
+            } else {
+                this->debug.hit_empty();
             }
             return 0;
         }
     }
 
     if(NULL == *_new) {
-        cache_entry_t* ceh = buf_alloc(l, l + size, 0, 0);
+        cache_entry_t* ceh = buf_alloc(l, l + size - 1, 0, 0);
         this->num_cached++;
         // add it in the rb tree
         rb_link_node(&(ceh->node), parent, _new);
@@ -269,6 +263,7 @@ void BIO_Cache::flush() {
             this->num_cached--;
             this->encrypted_len -= ceh->encrypted;
             this->unencrypted_len -= ceh->unencrypted;
+            this->debug.rans_overwrite_bytes(ceh->unencrypted);
             ceh->encrypted = get_encrpted(data, ceh->l - l);
             ceh->unencrypted = get_unencrpted(data, ceh->l - l);
             this->encrypted_len += ceh->encrypted;
@@ -280,6 +275,54 @@ void BIO_Cache::flush() {
 #endif
 
     }
+    this->debug.dump_rans();
+}
+
+/**
+ * @brief snapshot function behvaes like flush, except that it does not change is_cache property
+ * and it does not care about if any entries is cached or not.
+ * It simply flushed every entry in RB tree and it does not update the encrypted and unencrypted bytes.
+ * It also does NOT have any side effect on the RB tree itself.
+ * Instead the encrtyped data and unencrypted data will be updated to the data pointed by @param encrypted_len
+ * @param unencrypted_len.
+*/
+void BIO_Cache::snapshot() {
+    int64_t _encrypted_len = 0, _unencrypted_len = 0;
+
+    // iterate through rb tree.
+    struct rb_node* node;
+    node = rb_first(&(this->cache_root));
+    while(node) {
+        struct rb_node *lnode, *rnode;
+        struct rb_node *prev, *cur; 
+        uint64_t l, r;
+        // we iterate through rb tree to find a continuous interval
+        lnode = prev = node;
+        for(cur = rb_next(prev); cur && get_ceh(cur)->l == get_ceh(prev)->l + 1; cur = rb_next(prev)) {
+            prev = cur;
+        }
+        rnode = prev;
+        l = get_ceh(lnode)->l;
+        r = get_ceh(rnode)->l;
+
+        std::vector<char> data(SEC_TO_BYTES(r - l + 1));
+        readDataIntoVector(data, this->deviceName, l, r - l + 1);
+
+        // for each sector(node on rb tree), we find the node, chanage if_cache
+        // and update the encrypted and unencrypted bytes
+        struct rb_node* _node, *i;
+        if(NULL == (_node = rb_search(&(this->cache_root), l))) {
+            CH_debug("rb_search failed\n");
+            return;
+        }
+        for(i = _node; i && get_ceh(i)->l <= r; i = rb_next(i)) {
+            cache_entry_t* ceh = get_ceh(i);
+            _encrypted_len += get_encrpted(data, ceh->l - l);
+            _unencrypted_len += get_unencrpted(data, ceh->l - l);
+        }
+        node = rb_next(rnode);
+    }
+    this->debug.snapshot(_encrypted_len, _unencrypted_len);
 }
 
 /**
@@ -316,16 +359,16 @@ int BIO_Cache::sanity_check() {
 }
 
 void BIO_Cache::report() {
-    if(sanity_check() <= 0) {
-        printf("BIO cache sanity check failed\n");
-        return;
-    }
-    printf("BIO cache sanity check passed...\n");
     
     printf("unencrypted_len : %lu\n", this->unencrypted_len);
     printf("encrypted_len : %lu\n", this->encrypted_len);
     printf("num_entries : %d\n", this->num_entries);
     printf("num_cached : %d\n", this->num_cached);
+    if(sanity_check() <= 0) {
+        printf("BIO cache sanity check failed\n");
+        return;
+    }
+    printf("BIO cache sanity check passed...\n");
 
 }
 
@@ -333,7 +376,14 @@ void BIO_Cache::report() {
 
 #ifdef V1_ENABLE
 
-
+// remove overlapping @param len from corresponding length
+void BIO_Cache::_cache_remove(cache_entry_t* ceh) {
+    this->num_entries--;
+    this->encrypted_len -= ceh->encrypted;
+    this->unencrypted_len -= ceh->unencrypted;
+    ceh->encrypted = 0;
+    ceh->unencrypted = 0;
+}
 
 // merge the current node with prev and next node if they overlap
 // @note : only merge existing neighboring nodes with the same is_cache status
