@@ -19,7 +19,7 @@ sys.path.append(parent_dir)
 
 from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG
-from config import FS_EXT4, FS_NTFS
+from config import FS_EXT4, FS_NTFS, BOOT_CONFIG
 from preprocess import preprocess_tar_sys
 
 
@@ -58,7 +58,7 @@ def prepare_tar_sys(tar_sys_path):
         num_permissions = TAR_SYS_PARAMS["num_permissions"]
         os.system(f"python3 utils/gen_tar_sys.py {number_of_files} {median_length_of_files} {file_type_set} {dup_tar_sys_path} {framework_dir} {num_groups} {num_users} {num_permissions}")
 
-    mount_dev(dev_list[0], tar_sys_path, cfs_type)
+    mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 
     # change the owner of the root_path to the current user
     os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
@@ -113,7 +113,11 @@ file_type_set = TAR_SYS_PARAMS["file_type_set"]
 
 handle_flags(tar_sys_path)
 
+start = time.time()
+
 prepare_tar_sys(tar_sys_path)
+
+print(f"finish preparing target system using {time.time() - start} seconds")
 
 # Run dump_tar_sys_info.py to dump info to corresponding files
 os.system(f"python3 utils/dump_tar_sys_info.py {tar_sys_info_path} {tar_sys_path} {backup_dir_path} {number_of_files} {median_length_of_files} {file_type_set}")

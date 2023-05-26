@@ -3,8 +3,19 @@ import random
 import string
 import sys
 import shutil
+from tqdm import tqdm
 
 from access import make_assignment, clean_up_groups_users
+
+ASCII_SET = string.ascii_letters + string.digits + string.punctuation
+
+def hash(x):
+    """A very simple hash function that returns a number between 0 and len(ASCII_SET) - 1
+
+    Args:
+        x : a key, which is a int
+    """
+    return x % len(ASCII_SET)
 
 # Check if correct input format is provided
 if len(sys.argv) != 9:
@@ -63,14 +74,17 @@ for i in range(num_files):
     file_names.append(file_name)
 
 # Create the files in the output directory
-for file_name in file_names:
-    # Generate file size
-    file_size = int(median_length * (0.5 + random.random() * 0.5))
-    # Generate file content
-    file_content = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(file_size))
-    # Create the file
-    with open(os.path.join(sys.argv[4], file_name), 'w') as file:
-        file.write(file_content)
+with tqdm(total=num_files) as pbar:
+    for i, file_name in enumerate(file_names):
+        # Generate file size
+        file_size = int(median_length * (0.5 + random.random() * 0.5))
+        # Generate file content
+        file_content = ''.join(ASCII_SET[hash(i)] for i in range(file_size))
+        # Create the file
+        with open(os.path.join(sys.argv[4], file_name), 'w') as file:
+            file.write(file_content)
+        # Update the progress bar
+        pbar.update(1)
 
 # After having heirarchical structure, we need to set up the number of user groups and different users and assign them to different files and directories
 tar_sys_path = sys.argv[4]

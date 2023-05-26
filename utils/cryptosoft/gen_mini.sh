@@ -1,0 +1,2 @@
+make mini
+mv mini ../../

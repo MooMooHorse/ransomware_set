@@ -25,7 +25,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-from config import BOOT_CONFIG, MAGIC_NUM, PATHS
+from config import BOOT_CONFIG, MAGIC_NUM, PATHS, RANS_OPTIONS
 
 def add_magic_num_1_3(tar_sys_path):
     """
@@ -123,6 +123,7 @@ def files_sync(tar_sys_path):
     Refer to https://stackoverflow.com/questions/15983272/does-python-have-sync
     """
     current_dir = os.getcwd()
+    print("start syncing files to disk...")
     # print(f"Syncing files in {current_dir} / {tar_sys_path} to disk...")
     # iterate through all the files in the target system and flush them
     for root, dirs, files in os.walk(tar_sys_path):
@@ -131,7 +132,7 @@ def files_sync(tar_sys_path):
                 f.flush()
 
     # Before we flushed the internal buffers of all the files in the target system, now we need to sync the file system buffers to disk
-    
+    print("start syncing file system buffers to disk...")
     os.sync()
     os.system("sync")
     # sleep 5 seconds to make sure all the buffers are synced to disk
@@ -231,8 +232,12 @@ def _run_ransomware():
     Ransomware should be an executable file in the ransomware directory.
     It will only encrypte the files in the target system.
     """
-    print("Running ransomware...")
-    os.system("python3 utils/cryptosoft/ransomware.py")
+    cmd = RANS_OPTIONS["cmd"]
+    print(f"Running ransomware... with command {cmd}")
+    # current dir
+    cur_dir = os.getcwd()
+    print(f"Current dir is {cur_dir}")
+    os.system(cmd)
 
 def run_ransomware(tar_sys_path):
     """

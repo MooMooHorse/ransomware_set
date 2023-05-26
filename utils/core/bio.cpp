@@ -123,6 +123,7 @@ int64_t BIO_Cache::cache(uint64_t l, uint64_t r) {
 }
 
 #ifdef ENABLE_V1
+// this code will not be able to execute under user privilege
 static void readDataIntoVector(std::vector<char>& data, const std::string& inputFileName, 
 int secNum, int sectorCount) {
     std::ifstream input(inputFileName, std::ios::binary);  // Open input file in binary mode

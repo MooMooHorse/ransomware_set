@@ -18,7 +18,7 @@ private:
 public:
     TestingFramework(const std::string& traceFile, const std::string& device, const std::string& outputDir, 
     const uint64_t& m1, const uint64_t& m2, const uint64_t& m3)
-        : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), magic1(m1), magic2(m2), magic3(m3) {}
+        : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), magic1(m1), magic2(m2), magic3(m3){}
     void printParameters() const {
         // core functionality initialized
         std::cout << "Core Functionality Initialized..." << std::endl;
@@ -156,5 +156,6 @@ int main() {
     TestingFramework tf(arg_list[0], arg_list[1], arg_list[2], std::stoull(arg_list[3]), std::stoull(arg_list[4]), std::stoull(arg_list[5]));
     tf.printParameters();
     tf.run();
+    return 0;
 }
 

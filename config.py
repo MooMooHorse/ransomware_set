@@ -6,23 +6,29 @@ import json
 
 framework_dir = "rans_test"
 
+# a set of chosen file system types
+FS_EXT4 = 0
+FS_NTFS = 1
+
+XSMALL_DISK = 3
+
+
+MOUNT_CONFIG = {
+    'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
+    'fs_types' : ['ext4', 'ntfs'],
+    'cfs_type' : FS_EXT4,
+}
+
 BOOT_CONFIG = {
     "blktrace_dir" : "blktrace_dir",
-    "default_disk" : "/dev/vdb",
+    "default_disk" : MOUNT_CONFIG['dev_list'][XSMALL_DISK],
     "default_trace_file_path" : "blktrace_dir/tracefile",
     "core_dir" : "core_dir",
     "trace_path" : "blktrace_dir/blkparse_output"
 }
 
-# a set of chosen file system types
-FS_EXT4 = 0
-FS_NTFS = 1
 
-MOUNT_CONFIG = {
-    'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd'],
-    'fs_types' : ['ext4', 'ntfs'],
-    'cfs_type' : FS_NTFS,
-}
+
 
 # A set of paths used in the framework
 PATHS = {
@@ -36,7 +42,7 @@ PATHS = {
 # A set of parameters for the target system
 TAR_SYS_PARAMS = {
     "number_of_files": 1000,
-    "median_length_of_files": 1000,
+    "median_length_of_files": 100000,
     "file_type_set": 1,
     "num_groups" : 3,
     "num_users" : 1,
@@ -57,6 +63,13 @@ MAGIC_NUM = {
     "MAGIC_NUM2_04" : 0x23,
     # Magic number 3 is for each byte of the file data
     "MAGIC_NUM3" : 0x41,
+}
+
+PYTHON_RANS_COMMAND = "python3 utils/cryptosoft/ransomware.py"
+MINI_RANS_COMMAND = "./mini"
+
+RANS_OPTIONS = {
+    "cmd" : MINI_RANS_COMMAND,
 }
 
 def main():

