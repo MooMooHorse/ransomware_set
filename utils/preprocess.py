@@ -29,7 +29,7 @@ from config import BOOT_CONFIG, MAGIC_NUM, PATHS, RANS_OPTIONS
 
 def add_magic_num_1_3(tar_sys_path):
     """
-    Add magic number 1 at the beginning of each file and at the end of each file in the target system
+    Add magic number 3 to replace all the contents of the file
     """
     for root, dirs, files in os.walk(tar_sys_path):
         for file in files:
@@ -37,27 +37,21 @@ def add_magic_num_1_3(tar_sys_path):
             with open(os.path.join(root, file), "rb") as f:
                 data = f.read()
             with open(os.path.join(root, file), "wb") as f:
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_01"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_02"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_03"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_04"]]))
                 for byte in data:
                     f.write(bytes([MAGIC_NUM["MAGIC_NUM3"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_01"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_02"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_03"]]))
-                f.write(bytes([MAGIC_NUM["MAGIC_NUM1_04"]]))
 
 def add_magic_num_2(tar_sys_path):
     """
-    Add magic number 2 at the beginning and end of the file name and directory name
+    Add magic number 1 at the beginning of the file name and directory name
+    Add magic number 2 at the end of the file name and directory name
     """
+    magic_num_1_str = f"{MAGIC_NUM['MAGIC_NUM1_01']}{MAGIC_NUM['MAGIC_NUM1_02']}{MAGIC_NUM['MAGIC_NUM1_03']}{MAGIC_NUM['MAGIC_NUM1_04']}"
     magic_num_2_str = f"{MAGIC_NUM['MAGIC_NUM2_01']}{MAGIC_NUM['MAGIC_NUM2_02']}{MAGIC_NUM['MAGIC_NUM2_03']}{MAGIC_NUM['MAGIC_NUM2_04']}"
     for root, dirs, files in os.walk(tar_sys_path):
         for file in files:
-            os.rename(os.path.join(root, file), os.path.join(root, magic_num_2_str + file + magic_num_2_str))
+            os.rename(os.path.join(root, file), os.path.join(root, magic_num_1_str + file + magic_num_2_str))
         for dir in dirs:
-            os.rename(os.path.join(root, dir), os.path.join(root, magic_num_2_str + dir + magic_num_2_str))
+            os.rename(os.path.join(root, dir), os.path.join(root, magic_num_1_str + dir + magic_num_2_str))
 
 def launch_blktrace():
     default_disk = BOOT_CONFIG["default_disk"]

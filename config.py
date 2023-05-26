@@ -10,6 +10,7 @@ framework_dir = "rans_test"
 FS_EXT4 = 0
 FS_NTFS = 1
 
+NORMAL_DISK = 0
 XSMALL_DISK = 3
 
 
@@ -42,7 +43,7 @@ PATHS = {
 # A set of parameters for the target system
 TAR_SYS_PARAMS = {
     "number_of_files": 1000,
-    "median_length_of_files": 100000,
+    "median_length_of_files": 10000,
     "file_type_set": 1,
     "num_groups" : 3,
     "num_users" : 1,
@@ -69,7 +70,7 @@ PYTHON_RANS_COMMAND = "python3 utils/cryptosoft/ransomware.py"
 MINI_RANS_COMMAND = "./mini"
 
 RANS_OPTIONS = {
-    "cmd" : MINI_RANS_COMMAND,
+    "cmd" : PYTHON_RANS_COMMAND,
 }
 
 def main():

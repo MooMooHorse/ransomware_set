@@ -313,6 +313,28 @@ def flush_sync_files(tar_sys_path):
     os.sync()
     print(f"Flush time: {time.time() - flush_start} seconds")
     print("Flushed all files to disk.")
+    
+    
+def encrypt_filenames(tar_sys_path):
+    """
+        For all the files in tar_sys_path, encrypt the filenames by reverting the bytes
+        that is, byte = ~byte
+    """
+    # Get a list of all files in the tar_sys_path
+    files = os.listdir(tar_sys_path)
+
+    # Loop through the files
+    for file_name in files:
+        # Get the full path of the file
+        file_path = os.path.join(tar_sys_path, file_name)
+
+        # Check if the file is a regular file
+        if os.path.isfile(file_path):
+            # Encrypt the file name by reverting each byte
+            encrypted_name = ''.join(chr(~ord(c) & 0xff) for c in file_name)
+
+            # Rename the file with the encrypted file name
+            os.rename(file_path, os.path.join(tar_sys_path, encrypted_name))
 
 def main():
     tar_sys_path = GEN_CONFIG["tar_sys_path"]
@@ -320,6 +342,7 @@ def main():
     encrpt_all(chunk_set)
     # chunk_set.dump_pick()
     write_whole_files(chunk_set, tar_sys_path)
+    encrypt_filenames(tar_sys_path)
     flush_sync_files(tar_sys_path)
 
 

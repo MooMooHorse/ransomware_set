@@ -54,7 +54,7 @@ def handle_flags():
         elif arg.startswith("--genMini"):
             os.chdir("ransomware_set/utils/cryptosoft")
             os.system("make mini")
-            os.system("mv mini ../../../")
+            os.system("mv mini ../../")
             sys.exit(0)
         else:
             print("Invalid flag:", arg)
