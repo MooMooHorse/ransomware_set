@@ -3,6 +3,15 @@ import sys
 import shutil
 
 
+# Get the parent directory path
+parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Add the parent directory to sys.path
+sys.path.append(parent_dir)
+
+from config import PATHS
+
+
 def dump_sys_info(tar_sys_path, dump_file_path):
     """
     Given a set of files in tar_sys_path, we iterate through all files recursively within the tar_sys_path directory,
@@ -70,7 +79,7 @@ with open(os.path.join(tar_sys_info_path, "tar_sys_path"), "w") as file:
 with open(os.path.join(tar_sys_info_path, "backup_dir_path"), "w") as file:
     file.write(sys.argv[3])
 if len(sys.argv) == 7:
-    dump_sys_info(sys.argv[2], os.path.join(tar_sys_info_path, "tar_sys_dump"))
+    dump_sys_info(sys.argv[2], PATHS["tar_sys_dump_path"])
 
     with open(os.path.join(tar_sys_info_path, "file_type_set"), "w") as file:
         file.write(sys.argv[6])

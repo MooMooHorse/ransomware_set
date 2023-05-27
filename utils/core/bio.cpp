@@ -15,8 +15,8 @@
  * @date 2023-05-17
  */
 #include "bio.h"
-
-
+#include <unistd.h>
+#include <algorithm>
 static inline cache_entry_t* get_ceh(struct rb_node* node) {
     return container_of(node, cache_entry_t, node);
 }
@@ -285,6 +285,42 @@ void BIO_Cache::flush() {
     this->debug.dump_rans();
 }
 
+
+void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, std::vector<std::string>& unencrypted_files, 
+                            const std::vector<char>& buf, uint64_t sec_off) {
+    uint64_t _magic1, _magic2, _magic3, _magic4;
+    uint64_t big_magic;
+    std::string file_name;
+    uint32_t i;
+    int fname_start = 0;
+    for(i = SEC_TO_BYTES(sec_off); i + 3 < SEC_TO_BYTES(sec_off) + SEC_SIZE; i++) {
+        _magic1 = (uint8_t)buf[i]; _magic2 = (uint8_t)buf[i + 1]; _magic3 = (uint8_t)buf[i + 2]; _magic4 = (uint8_t)buf[i + 3];
+        big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
+        // if(buf[i] == 't' && buf[i+1] == 'x' && buf[i+2] =='t' && buf[i+3] == '_') {
+        //     _magic1 = (uint8_t)buf[i - 4]; _magic2 = (uint8_t)buf[i - 3]; _magic3 = (uint8_t)buf[i - 2]; _magic4 = (uint8_t)buf[i - 1];
+        //     big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
+        //     printf("%lu %lu %lu %lu\n", _magic1, _magic2, _magic3, _magic4);
+        //     std::cout << big_magic << " " << i % 512<<std::endl;
+        // }
+        if(big_magic == this->magic1){
+            fname_start = 1;
+            i += 3;
+        
+        }else if(big_magic == this->magic2 || big_magic == ENCRYPT(this->magic2)){
+            if(big_magic == this->magic2 && fname_start) {
+                unencrypted_files.push_back(file_name);
+                recoverable ++;
+            } else {
+                unrecoverable ++;
+            }
+            fname_start = 0;
+            file_name = "";
+        } else if(fname_start) {
+            file_name += buf[i];
+        }
+    }
+}
+
 /**
  * @brief snapshot function behvaes like flush, except that it does not change is_cache property
  * and it does not care about if any entries is cached or not.
@@ -292,9 +328,13 @@ void BIO_Cache::flush() {
  * It also does NOT have any side effect on the RB tree itself.
  * Instead the encrtyped data and unencrypted data will be updated to the data pointed by @param encrypted_len
  * @param unencrypted_len.
+ * @version 2.0 update : add support for recoverable files.
 */
 void BIO_Cache::snapshot() {
     int64_t _encrypted_len = 0, _unencrypted_len = 0;
+
+    this->files_recoverable = this->files_unrecoverable = 0;
+    this->unencrypted_files.clear();
 
     // iterate through rb tree.
     struct rb_node* node;
@@ -326,6 +366,8 @@ void BIO_Cache::snapshot() {
             cache_entry_t* ceh = get_ceh(i);
             _encrypted_len += get_encrpted(data, ceh->l - l);
             _unencrypted_len += get_unencrpted(data, ceh->l - l);
+            this->get_recoverable(this->files_recoverable, this->files_unrecoverable, this->unencrypted_files,
+             data, ceh->l - l);
         }
         node = rb_next(rnode);
     }
@@ -365,12 +407,89 @@ int BIO_Cache::sanity_check() {
     return encrpted_sum == this->encrypted_len && unencrypted_sum == this->unencrypted_len;
 }
 
-void BIO_Cache::report() {
+// debugging function that prints out the current environment for tar_sys_info
+static void dump_tar_sys_info_env() {
+    // Print the current directory
+    char cwd[1024];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr) {
+        std::cout << "Current directory: " << cwd << std::endl;
+    } else {
+        std::cerr << "Error: could not get current directory" << std::endl;
+    }
+    // execute a ls in rans_test/tar_sys_info
+    std::string cmd = "ls -l rans_test/tar_sys_info";
+    std::cout << "Executing: " << cmd << std::endl;
+    system(cmd.c_str());
+}
+
+void BIO_Cache::snapshot_report(const std::string& dumpFilePath) {
+    std::unordered_map<std::string, std::size_t> file_sizes;
+
+    std::cout << "----BIO Cache Snapshot Report----" << std::endl;
+
+    printf("dentries recoverable : %lu\n", this->files_recoverable);
+    printf("dentries unrecoverable : %lu\n", this->files_unrecoverable);
+    // printf("unencrypted files : \n");
+    // for(uint64_t i = 0; i < this->unencrypted_files.size(); i++) {
+    //     printf("%s\n", this->unencrypted_files[i].c_str());
+    // }
+    // remove the repeat file names
+    std::sort(this->unencrypted_files.begin(), this->unencrypted_files.end());
+    auto last = std::unique(this->unencrypted_files.begin(), this->unencrypted_files.end());
+    this->unencrypted_files.erase(last, this->unencrypted_files.end());
     
+    printf("number of unencrypted files : %lu\n", this->unencrypted_files.size());
+    // try to find totally recoverable length of files
+    // the dump file given by dumpFilePath has the following format
+    //<number_of_files> <total_size>
+    // <file_path_1> <file_size_1>
+    // <file_path_2> <file_size_2>
+    // ...
+    uint64_t total_size = 0;
+    std::ifstream dumpFile;
+    dumpFile.open(dumpFilePath);
+    if(!dumpFile.is_open()) {
+        dump_tar_sys_info_env();
+        printf("dump file %s not found\n", dumpFilePath.c_str());
+        return;
+    }
+    int num_files;
+    dumpFile >> num_files >> total_size;
+    printf("total size of files : %lu\n", total_size);
+    for(int i = 0; i < num_files; i++) {
+        std::string file_path;
+        size_t file_size;
+        dumpFile >> file_path >> file_size;
+        if(file_size == 0) {
+            printf("file %s is empty\n", file_path.c_str());
+            continue;
+        }
+        // file path is a path, we want to extract the file name
+        file_path = file_path.substr(file_path.find_last_of("/") + 1);
+        file_sizes[file_path] = file_size;
+    }
+    // iterate through unencrypted_files
+    total_size = 0;
+    for(uint64_t i = 0; i < this->unencrypted_files.size(); i++) {
+        std::string file_name = this->unencrypted_files[i];
+        if (file_sizes.count(file_name) > 0) {
+            total_size += file_sizes[file_name];
+        }
+    }
+    printf("total size of recoverable files : %lu\n", total_size);
+
+    std::cout << "----BIO Cache Snapshot Report End----" << std::endl;
+}
+
+
+void BIO_Cache::report() {
+
+    printf("------- report start -------\n");
     printf("unencrypted_len : %lu\n", this->unencrypted_len);
     printf("encrypted_len : %lu\n", this->encrypted_len);
     printf("num_entries : %d\n", this->num_entries);
     printf("num_cached : %d\n", this->num_cached);
+    printf("------- report end -------\n");
     if(sanity_check() <= 0) {
         printf("BIO cache sanity check failed\n");
         return;

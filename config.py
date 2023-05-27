@@ -29,16 +29,18 @@ BOOT_CONFIG = {
 }
 
 
-
+tar_sys_info_path = f"{framework_dir}/tar_sys_info"
+tar_sys_dump_path = os.path.join(tar_sys_info_path, "tar_sys_dump")
 
 # A set of paths used in the framework
 PATHS = {
     "framework_dir": "rans_test",
-    "tar_sys_info_path": f"{framework_dir}/tar_sys_info",
+    "tar_sys_info_path": tar_sys_info_path,
     "duplicate_dir": f"{framework_dir}/duplicates",
     "tar_sys_path": f"{framework_dir}/tar_sys",
     "rans_path": f"{framework_dir}/ransomware",
     "backup_dir_path": f"{framework_dir}/backup_dir",
+    "tar_sys_dump_path": tar_sys_dump_path,
 }
 # A set of parameters for the target system
 TAR_SYS_PARAMS = {
@@ -53,15 +55,23 @@ TAR_SYS_PARAMS = {
 # A set of magic numbers used in the framework
 MAGIC_NUM = {
     # Magic number 1 is for the beginning of the file and directory name
-    "MAGIC_NUM1_01" : 0xde,
-    "MAGIC_NUM1_02" : 0xad,
-    "MAGIC_NUM1_03" : 0xbe,
-    "MAGIC_NUM1_04" : 0xef,
+    # "MAGIC_NUM1_01" : 0xde,
+    # "MAGIC_NUM1_02" : 0xad,
+    # "MAGIC_NUM1_03" : 0xbe,
+    # "MAGIC_NUM1_04" : 0xef,
+    "MAGIC_NUM1_01" : 0x42,
+    "MAGIC_NUM1_02" : 0x43,
+    "MAGIC_NUM1_03" : 0x44,
+    "MAGIC_NUM1_04" : 0x45,
     # Magic number 2 is for the end of the file and directory name
-    "MAGIC_NUM2_01" : 0xca,
-    "MAGIC_NUM2_02" : 0xfe,
-    "MAGIC_NUM2_03" : 0xba,
-    "MAGIC_NUM2_04" : 0x23,
+    # "MAGIC_NUM2_01" : 0xca,
+    # "MAGIC_NUM2_02" : 0xfe,
+    # "MAGIC_NUM2_03" : 0xba,
+    # "MAGIC_NUM2_04" : 0x23,
+    "MAGIC_NUM2_01" : 0x22,
+    "MAGIC_NUM2_02" : 0x23,
+    "MAGIC_NUM2_03" : 0x24,
+    "MAGIC_NUM2_04" : 0x25,
     # Magic number 3 is for each byte of the file data
     "MAGIC_NUM3" : 0x41,
 }
@@ -94,6 +104,8 @@ def main():
             args.append(f"{magic1} {magic2} {magic3}")
         elif arg.startswith("-xma"): # all magic numbers in hex
             args.append(f"{hex(magic1)} {hex(magic2)} {hex(magic3)}")
+        elif arg.startswith("-tsdp"): # target system dump path
+            args.append(f"{PATHS['tar_sys_dump_path']}")
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

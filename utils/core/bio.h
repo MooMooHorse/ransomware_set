@@ -7,9 +7,12 @@
 #include <vector>
 #include "rbtree.h"
 #include <queue>
+#include <unordered_map>
 
 #define SEC_TO_BYTES(sec)  ((sec) << 9)
 #define SEC_SIZE           512
+
+#define NUM2CHAR(num)      ((char)(num&0xff))
 
 #define ENCRYPT(byte)      (~(byte))
 
@@ -83,6 +86,7 @@ public:
         this->snapshot_unencrypted = unencrypted;
     }
     void dump_rans() {
+        std::cout << "----here starting metadata info dump----" << std::endl;
         if(this->rans_en){
             std::cout << "rans_en: " << this->rans_en << std::endl;
             std::cout << "rans_overwrite: " << this->rans_overwrite << std::endl;
@@ -91,6 +95,7 @@ public:
             std::cout << "encrypted hit length (bytes) " << this->BIO_hit_encrpted << std::endl;
             std::cout << "unencrypted hit length (bytes) " << this->BIO_hit_unencrypted << std::endl;
         }
+        std::cout << "----here ending metadata info dump----" << std::endl;
     }
     void dump_snapshot() {
         std::cout << "snapshot_encrypted snapshot_unencrypted" << std::endl;
@@ -102,6 +107,8 @@ public:
 class BIO_Cache {
 private:
     uint64_t unencrypted_len, encrypted_len;
+    uint64_t files_recoverable, files_unrecoverable;
+    std::vector<std::string> unencrypted_files;
     int num_entries, num_cached;
     uint64_t magic1, magic2, magic3;
     int min_len;
@@ -109,11 +116,16 @@ private:
     std::priority_queue<int, std::vector<int>, std::greater<int>> cached_list;
     std::string deviceName;
 public:
-    BIO_Cache(uint64_t unencrpted_len, uint64_t encrypted_len, int num_entries, int num_cached,
+    BIO_Cache(uint64_t unencrpted_len, uint64_t encrypted_len, 
+    uint64_t files_recoverable, uint64_t files_unrecoverable,
+    int num_entries, int num_cached,
     uint64_t magic1, uint64_t magic2, uint64_t magic3, 
-    const std::string& deviceName) {
+    const std::string& deviceName) : unencrypted_files(std::vector<std::string>()) // Initialize unencrypted_files to an empty vector
+    {
         this->unencrypted_len = unencrpted_len;
         this->encrypted_len = encrypted_len;
+        this->files_recoverable = files_recoverable;
+        this->files_unrecoverable = files_unrecoverable;
         this->num_entries = num_entries;
         this->num_cached = num_cached;
         this->magic1 = magic1;
@@ -128,6 +140,7 @@ public:
     void flush();
     void report();
     void snapshot();
+    void snapshot_report(const std::string& dumpFilePath);
 
     // debug
     BIO_debug debug;
@@ -137,6 +150,9 @@ private:
     uint64_t size);
     int get_encrpted(const std::vector<char>& buf, uint64_t sec_off);
     int get_unencrpted(const std::vector<char>& buf, uint64_t sec_off);
+    void get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, 
+    std::vector<std::string>& unencrypted_files, const std::vector<char>& buf, 
+    uint64_t sec_off);
     // update metadata when inserting, merging or removing
     void _cache_insert(cache_entry_t* ceh);
     void _cache_remove(cache_entry_t* ceh);

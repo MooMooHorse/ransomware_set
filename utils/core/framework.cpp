@@ -13,12 +13,15 @@ private:
     std:: string traceFilePath;
     std:: string diskDevice;
     std:: string outputDirPath;
+    std:: string tarSysDumpPath;
     BIO_Cache* cache;
     uint64_t magic1, magic2, magic3;
 public:
-    TestingFramework(const std::string& traceFile, const std::string& device, const std::string& outputDir, 
+    TestingFramework(const std::string& traceFile, const std::string& device, 
+    const std::string& outputDir, const std::string& tarSysDump,
     const uint64_t& m1, const uint64_t& m2, const uint64_t& m3)
-        : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), magic1(m1), magic2(m2), magic3(m3){}
+        : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), tarSysDumpPath(tarSysDump),
+        magic1(m1), magic2(m2), magic3(m3){}
     void printParameters() const {
         // core functionality initialized
         std::cout << "Core Functionality Initialized..." << std::endl;
@@ -33,7 +36,7 @@ public:
         // run the core functionality
         std::cout << "Running Core Functionality..." << std::endl;
         try {
-            cache = new BIO_Cache(0, 0, 0, 0, magic1, magic2, magic3, this->diskDevice);
+            cache = new BIO_Cache(0, 0, 0, 0, 0, 0, magic1, magic2, magic3, this->diskDevice);
         } catch (std::exception& e) {
             std::cerr << "Failed to initialize BIO_Cache: " << e.what() << std::endl;
             return;
@@ -41,6 +44,8 @@ public:
         cache_BIO();
         this->cache->flush();
         this->cache->report();
+        this->cache->snapshot();
+        this->cache->snapshot_report(this->tarSysDumpPath);
         launch_ransomware();
         this->cache->debug.clear();
         this->cache->debug.enable_rans();
@@ -48,6 +53,7 @@ public:
         this->cache->flush();
         this->cache->report();
         this->cache->snapshot();
+        this->cache->snapshot_report(this->tarSysDumpPath);
         this->cache->debug.dump_snapshot();
     }
 private:
@@ -133,7 +139,7 @@ private:
 
 
 int main() {
-    std::string cmd = "python3 config.py -tfp -dd -cd -ma";
+    std::string cmd = "python3 config.py -tfp -dd -cd -tsdp -ma";
     char buffer[128];
     std::string args = "";
     FILE* pipe = popen(cmd.c_str(), "r");
@@ -153,7 +159,8 @@ int main() {
         arg_list.push_back(args);
     }
 
-    TestingFramework tf(arg_list[0], arg_list[1], arg_list[2], std::stoull(arg_list[3]), std::stoull(arg_list[4]), std::stoull(arg_list[5]));
+    TestingFramework tf(arg_list[0], arg_list[1], arg_list[2], arg_list[3],
+    std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]));
     tf.printParameters();
     tf.run();
     return 0;
