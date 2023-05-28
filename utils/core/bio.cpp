@@ -296,12 +296,6 @@ void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, 
     for(i = SEC_TO_BYTES(sec_off); i + 3 < SEC_TO_BYTES(sec_off) + SEC_SIZE; i++) {
         _magic1 = (uint8_t)buf[i]; _magic2 = (uint8_t)buf[i + 1]; _magic3 = (uint8_t)buf[i + 2]; _magic4 = (uint8_t)buf[i + 3];
         big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
-        // if(buf[i] == 't' && buf[i+1] == 'x' && buf[i+2] =='t' && buf[i+3] == '_') {
-        //     _magic1 = (uint8_t)buf[i - 4]; _magic2 = (uint8_t)buf[i - 3]; _magic3 = (uint8_t)buf[i - 2]; _magic4 = (uint8_t)buf[i - 1];
-        //     big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
-        //     printf("%lu %lu %lu %lu\n", _magic1, _magic2, _magic3, _magic4);
-        //     std::cout << big_magic << " " << i % 512<<std::endl;
-        // }
         if(big_magic == this->magic1){
             fname_start = 1;
             i += 3;
