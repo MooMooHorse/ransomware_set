@@ -10,6 +10,7 @@ config_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__f
 sys.path.append(config_dir)
 
 from crypto_config import ACCESS_TYPE, GEN_CONFIG
+from crypto_config import MODE_OVERWRITE, MODE_DELETECREATE
 
 
 class Chunk:
@@ -105,7 +106,11 @@ class ChunkSet:
                     num_dumped += 1
             else:
                 return None
-        
+    def get_names(self):
+        """
+        Return a list of filenames in the chunk_set
+        """
+        return self.chunks.keys()
 
 def read_files(tar_sys_path):
     """
@@ -336,7 +341,26 @@ def encrypt_filenames(tar_sys_path):
             # Rename the file with the encrypted file name
             os.rename(file_path, os.path.join(tar_sys_path, encrypted_name))
 
-def main():
+def delete_all(tar_sys_path):
+    """
+    Delete all the files in tar_sys_path.
+    """
+    for root, dirs, files in os.walk(tar_sys_path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            os.remove(filepath)
+            
+def create_all(tar_sys_path, chunk_set):
+    """
+    Get keys from chunk set (a set of file names) then we create those files in tar_sys_path as empty files.
+    """
+    fnames = chunk_set.get_names()
+    for name in fnames:
+        filepath = name
+        with open(filepath, "wb+") as f:
+            pass
+
+def main_overwrite():
     tar_sys_path = GEN_CONFIG["tar_sys_path"]
     chunk_set = read_files(tar_sys_path)
     encrpt_all(chunk_set)
@@ -344,7 +368,23 @@ def main():
     write_whole_files(chunk_set, tar_sys_path)
     encrypt_filenames(tar_sys_path)
     flush_sync_files(tar_sys_path)
+    
+def main_deletecreate():
+    tar_sys_path = GEN_CONFIG["tar_sys_path"]
+    chunk_set = read_files(tar_sys_path)
+    encrpt_all(chunk_set)
+    delete_all(tar_sys_path)
+    create_all(tar_sys_path, chunk_set)
+    write_whole_files(chunk_set, tar_sys_path)
+    encrypt_filenames(tar_sys_path)
+    flush_sync_files(tar_sys_path)
 
 
 if __name__ == '__main__':
-    main()
+    mode = GEN_CONFIG['mode']
+    if mode == MODE_OVERWRITE:
+        main_overwrite()
+    elif mode == MODE_DELETECREATE:
+        main_deletecreate()
+    else:
+        print("Invalid mode.")

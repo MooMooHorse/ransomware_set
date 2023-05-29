@@ -18,7 +18,7 @@ XSMALL_DISK = 3
 MOUNT_CONFIG = {
     'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
     'fs_types' : ['ext4', 'ntfs', 'f2fs'],
-    'cfs_type' : FS_F2FS,
+    'cfs_type' : FS_EXT4,
 }
 
 BOOT_CONFIG = {
@@ -79,6 +79,7 @@ MAGIC_NUM = {
 
 PYTHON_RANS_COMMAND = "python3 utils/cryptosoft/ransomware.py"
 MINI_RANS_COMMAND = "./mini"
+
 
 RANS_OPTIONS = {
     "cmd" : PYTHON_RANS_COMMAND,

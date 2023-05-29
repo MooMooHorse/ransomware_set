@@ -1,4 +1,7 @@
 
+MODE_OVERWRITE = 0
+MODE_DELETECREATE = 1
+
 ACCESS_TYPE = {
     0 : 'sudo',
     1 : 'u0',
@@ -13,5 +16,6 @@ GEN_CONFIG = {
     'chunk_size' : 1024,
     'tar_sys_path' : 'rans_test/tar_sys',
     'num_threads' : 5,
+    'mode' : MODE_DELETECREATE,
 }
 
