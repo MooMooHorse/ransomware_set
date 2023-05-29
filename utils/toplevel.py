@@ -19,7 +19,7 @@ sys.path.append(parent_dir)
 
 from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG
-from config import FS_EXT4, FS_NTFS, BOOT_CONFIG
+from config import FS_EXT4, FS_NTFS, FS_F2FS, BOOT_CONFIG
 from preprocess import preprocess_tar_sys
 
 
@@ -42,6 +42,8 @@ def mount_dev(dev_path, mount_path, cfs_type):
         os.system(f"sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 {dev_path} {mount_path}")
     elif cfs_type == FS_NTFS:
         os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
+    elif cfs_type == FS_F2FS:
+        os.system(f"sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
         
 
     dev_list.remove(dev_path)

@@ -9,6 +9,7 @@ framework_dir = "rans_test"
 # a set of chosen file system types
 FS_EXT4 = 0
 FS_NTFS = 1
+FS_F2FS = 2
 
 NORMAL_DISK = 0
 XSMALL_DISK = 3
@@ -16,8 +17,8 @@ XSMALL_DISK = 3
 
 MOUNT_CONFIG = {
     'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
-    'fs_types' : ['ext4', 'ntfs'],
-    'cfs_type' : FS_EXT4,
+    'fs_types' : ['ext4', 'ntfs', 'f2fs'],
+    'cfs_type' : FS_F2FS,
 }
 
 BOOT_CONFIG = {
