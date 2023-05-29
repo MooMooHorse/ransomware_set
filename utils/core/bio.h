@@ -35,6 +35,11 @@
 #define PRE_ATTACK          0
 #define POST_ATTACK         1
 
+typedef enum ENCODING_TYPE {
+    UTF8 = 0,
+    UTF16,
+} encoding_t;
+
 
 typedef struct CACHE_ENTRY {
     uint64_t l, r; // l, r should be sector size aligned
@@ -115,12 +120,15 @@ private:
     struct rb_root cache_root;
     std::priority_queue<int, std::vector<int>, std::greater<int>> cached_list;
     std::string deviceName;
+    encoding_t encoding;
 public:
     BIO_Cache(uint64_t unencrpted_len, uint64_t encrypted_len, 
     uint64_t files_recoverable, uint64_t files_unrecoverable,
     int num_entries, int num_cached,
     uint64_t magic1, uint64_t magic2, uint64_t magic3, 
-    const std::string& deviceName) : unencrypted_files(std::vector<std::string>()) // Initialize unencrypted_files to an empty vector
+    const std::string& deviceName, const encoding_t encoding
+    ) : unencrypted_files(std::vector<std::string>()), // Initialize unencrypted_files to an empty vector
+    encoding(encoding)
     {
         this->unencrypted_len = unencrpted_len;
         this->encrypted_len = encrypted_len;
@@ -156,9 +164,17 @@ private:
     // update metadata when inserting, merging or removing
     void _cache_insert(cache_entry_t* ceh);
     void _cache_remove(cache_entry_t* ceh);
+    
 #ifdef V1_ENABLE
     int64_t merge_rb_node(struct rb_root* root, struct rb_node* node);
 #endif
+
+    void _get_recoverable_utf8(uint64_t& recoverable, uint64_t& unrecoverable, 
+    std::vector<std::string>& unencrypted_files, const std::vector<char>& buf, 
+    uint64_t sec_off);
+    void _get_recoverable_utf16(uint64_t& recoverable, uint64_t& unrecoverable, 
+    std::vector<std::string>& unencrypted_files, const std::vector<char>& buf, 
+    uint64_t sec_off);
 };
 
 #endif /* _BIO_H_ */

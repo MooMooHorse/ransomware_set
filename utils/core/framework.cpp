@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "bio.h"
 
+
 class TestingFramework {
 private:
     std:: string traceFilePath;
@@ -16,12 +17,13 @@ private:
     std:: string tarSysDumpPath;
     BIO_Cache* cache;
     uint64_t magic1, magic2, magic3;
+    encoding_t encoding;
 public:
     TestingFramework(const std::string& traceFile, const std::string& device, 
     const std::string& outputDir, const std::string& tarSysDump,
-    const uint64_t& m1, const uint64_t& m2, const uint64_t& m3)
+    const uint64_t& m1, const uint64_t& m2, const uint64_t& m3, const encoding_t& encoding)
         : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), tarSysDumpPath(tarSysDump),
-        magic1(m1), magic2(m2), magic3(m3){}
+        magic1(m1), magic2(m2), magic3(m3), encoding(encoding) {}
     void printParameters() const {
         // core functionality initialized
         std::cout << "Core Functionality Initialized..." << std::endl;
@@ -29,6 +31,13 @@ public:
         std::cout << "Disk Device: " << diskDevice << std::endl;
         std::cout << "Output Directory: " << outputDirPath << std::endl;
         std::cout << "Magic Numbers: " << magic1 << " " << magic2 << " " << magic3 << std::endl;
+        if(encoding == UTF8) {
+            std::cout << "Encoding: UTF8" << std::endl;
+        } else if(encoding == UTF16) {
+            std::cout << "Encoding: UTF16" << std::endl;
+        } else {
+            std::cout << "Encoding: UNKNOWN" << std::endl;
+        }
     }
 
 
@@ -36,7 +45,7 @@ public:
         // run the core functionality
         std::cout << "Running Core Functionality..." << std::endl;
         try {
-            cache = new BIO_Cache(0, 0, 0, 0, 0, 0, magic1, magic2, magic3, this->diskDevice);
+            cache = new BIO_Cache(0, 0, 0, 0, 0, 0, magic1, magic2, magic3, this->diskDevice, this->encoding);
         } catch (std::exception& e) {
             std::cerr << "Failed to initialize BIO_Cache: " << e.what() << std::endl;
             return;
@@ -139,7 +148,7 @@ private:
 
 
 int main() {
-    std::string cmd = "python3 config.py -tfp -dd -cd -tsdp -ma";
+    std::string cmd = "python3 config.py -tfp -dd -cd -tsdp -ma -en";
     char buffer[128];
     std::string args = "";
     FILE* pipe = popen(cmd.c_str(), "r");
@@ -160,7 +169,7 @@ int main() {
     }
 
     TestingFramework tf(arg_list[0], arg_list[1], arg_list[2], arg_list[3],
-    std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]));
+    std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]), (encoding_t)std::stoull(arg_list[7]));
     tf.printParameters();
     tf.run();
     return 0;

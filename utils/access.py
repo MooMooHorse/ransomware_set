@@ -14,7 +14,7 @@ def rm_groups(output_dir):
     with open(os.path.join(output_dir, "access/groups"), "r") as file:
         for line in file:
             group = line.strip()
-            os.system(f"sudo groupdel {group}")
+            os.system(f"sudo groupdel {group} 2> /dev/null")
 
 def rm_users(output_dir):
     # remove all users recorded in <output_directory>/access/users from linux

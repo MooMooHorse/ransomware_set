@@ -286,7 +286,7 @@ void BIO_Cache::flush() {
 }
 
 
-void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, std::vector<std::string>& unencrypted_files, 
+void BIO_Cache::_get_recoverable_utf8(uint64_t& recoverable, uint64_t& unrecoverable, std::vector<std::string>& unencrypted_files, 
                             const std::vector<char>& buf, uint64_t sec_off) {
     uint64_t _magic1, _magic2, _magic3, _magic4;
     uint64_t big_magic;
@@ -299,7 +299,6 @@ void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, 
         if(big_magic == this->magic1){
             fname_start = 1;
             i += 3;
-        
         }else if(big_magic == this->magic2 || big_magic == ENCRYPT(this->magic2)){
             if(big_magic == this->magic2 && fname_start) {
                 unencrypted_files.push_back(file_name);
@@ -312,6 +311,47 @@ void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, 
         } else if(fname_start) {
             file_name += buf[i];
         }
+    }
+}
+
+// do same thing as _get_recoverable_utf8, but for utf16. That is, instead of checking it every byte(i++), we check it every two bytes(i+=2)
+// and the big magic should be calculated differently (since utf16 is 2 bytes per char)
+void BIO_Cache::_get_recoverable_utf16(uint64_t& recoverable, uint64_t& unrecoverable, std::vector<std::string>& unencrypted_files, 
+                            const std::vector<char>& buf, uint64_t sec_off) {
+    uint64_t _magic1, _magic2, _magic3, _magic4;
+    uint64_t big_magic;
+    std::string file_name;
+    uint32_t i;
+    int fname_start = 0;
+    for(i = SEC_TO_BYTES(sec_off); i + 7 < SEC_TO_BYTES(sec_off) + SEC_SIZE; i+=2) {
+        _magic1 = (uint8_t)buf[i]; _magic2 = (uint8_t)buf[i + 2]; _magic3 = (uint8_t)buf[i + 4]; _magic4 = (uint8_t)buf[i + 6];
+        big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
+        if(big_magic == this->magic1){
+            fname_start = 1;
+            i += 6;
+        }else if(big_magic == this->magic2 || big_magic == ENCRYPT(this->magic2)){
+            if(big_magic == this->magic2 && fname_start) {
+                unencrypted_files.push_back(file_name);
+                recoverable ++;
+            } else {
+                unrecoverable ++;
+            }
+            fname_start = 0;
+            file_name = "";
+        } else if(fname_start) {
+            file_name += buf[i];
+        }
+    }
+
+}
+
+void BIO_Cache::get_recoverable(uint64_t& recoverable, uint64_t& unrecoverable, std::vector<std::string>& unencrypted_files, 
+                            const std::vector<char>& buf, uint64_t sec_off) {
+    if(this->encoding == UTF8) this->_get_recoverable_utf8(recoverable, unrecoverable, unencrypted_files, buf, sec_off);
+    else if(this->encoding == UTF16) this->_get_recoverable_utf16(recoverable, unrecoverable, unencrypted_files, buf, sec_off);
+    else {
+        printf("encoding not supported\n");
+        exit(1);
     }
 }
 

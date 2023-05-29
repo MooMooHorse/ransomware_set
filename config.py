@@ -11,14 +11,24 @@ FS_EXT4 = 0
 FS_NTFS = 1
 FS_F2FS = 2
 
+cfs_type = FS_NTFS
+
 NORMAL_DISK = 0
 XSMALL_DISK = 3
 
+UTF8 = 0
+UTF16 = 1
+
+encoding_rule = UTF8
+
+if cfs_type == FS_NTFS:
+    encoding_rule = UTF16
 
 MOUNT_CONFIG = {
     'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
     'fs_types' : ['ext4', 'ntfs', 'f2fs'],
-    'cfs_type' : FS_EXT4,
+    'cfs_type' : cfs_type,
+    'enconding' : encoding_rule,
 }
 
 BOOT_CONFIG = {
@@ -108,6 +118,8 @@ def main():
             args.append(f"{hex(magic1)} {hex(magic2)} {hex(magic3)}")
         elif arg.startswith("-tsdp"): # target system dump path
             args.append(f"{PATHS['tar_sys_dump_path']}")
+        elif arg.startswith("-en"): # encoding rule
+            args.append(f"{encoding_rule}")
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
