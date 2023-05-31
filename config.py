@@ -11,9 +11,10 @@ FS_EXT4 = 0
 FS_NTFS = 1
 FS_F2FS = 2
 
-cfs_type = FS_NTFS
+cfs_type = FS_EXT4
 
 NORMAL_DISK = 0
+BACKUP_DISK = 1
 XSMALL_DISK = 3
 
 UTF8 = 0
@@ -36,7 +37,9 @@ BOOT_CONFIG = {
     "default_disk" : MOUNT_CONFIG['dev_list'][XSMALL_DISK],
     "default_trace_file_path" : "blktrace_dir/tracefile",
     "core_dir" : "core_dir",
-    "trace_path" : "blktrace_dir/blkparse_output"
+    "trace_path" : "blktrace_dir/blkparse_output",
+    "backup_blktrace_dir" : "backup_blktrace_dir",
+    "backup_disk" : MOUNT_CONFIG['dev_list'][BACKUP_DISK],
 }
 
 

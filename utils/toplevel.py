@@ -20,7 +20,7 @@ sys.path.append(parent_dir)
 from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG
 from config import FS_EXT4, FS_NTFS, FS_F2FS, BOOT_CONFIG
-from preprocess import preprocess_tar_sys
+from preprocess import preprocess_tar_sys, preprocess_backup_dir
 
 
 dev_list = MOUNT_CONFIG['dev_list']
@@ -67,8 +67,15 @@ def prepare_tar_sys(tar_sys_path):
 
     # move all files in dup_tar_sys_path to tar_sys_path
     os.system(f"sudo mv {dup_tar_sys_path}/* {tar_sys_path}")
+    
+import subprocess
 
-def handle_flags(tar_sys_path):
+def prepare_backup_dir(tar_sys_path, backup_dir_path):
+    mount_dev(BOOT_CONFIG['backup_disk'], backup_dir_path, cfs_type)
+    os.system(f"sudo chown -R {os.getlogin()} {backup_dir_path}")
+    os.system(f"cp -rp {tar_sys_path}/* {backup_dir_path}")
+
+def handle_flags(tar_sys_path, backup_dir_path):
     for arg in sys.argv[1:]:
         if arg.startswith("-t=") or arg.startswith("--tar_sys_path="):
             tar_sys_path = arg.split("=", 1)[1]
@@ -79,7 +86,7 @@ def handle_flags(tar_sys_path):
         elif arg.startswith("--clean"):
             # remove rams_test directory with sudo and exit
             clean_up_groups_users(f"{framework_dir}") # first remove all groups and users created by gen_tar_sys.py
-            os.system(f"sudo umount {tar_sys_path} && sudo rm -rf rans_test")
+            os.system(f"sudo umount {tar_sys_path} && sudo umount {backup_dir_path} && sudo rm -rf rans_test")
             sys.exit(0)
         else:
             print("Invalid flag:", arg)
@@ -113,19 +120,18 @@ number_of_files = TAR_SYS_PARAMS["number_of_files"]
 median_length_of_files = TAR_SYS_PARAMS["median_length_of_files"]
 file_type_set = TAR_SYS_PARAMS["file_type_set"]
 
-handle_flags(tar_sys_path)
+handle_flags(tar_sys_path, backup_dir_path)
 
 start = time.time()
 
 prepare_tar_sys(tar_sys_path)
+prepare_backup_dir(tar_sys_path, backup_dir_path)
 
 print(f"finish preparing target system using {time.time() - start} seconds")
 
 # Run dump_tar_sys_info.py to dump info to corresponding files
 os.system(f"python3 utils/dump_tar_sys_info.py {tar_sys_info_path} {tar_sys_path} {backup_dir_path} {number_of_files} {median_length_of_files} {file_type_set}")
 
-# Duplicate directories
-os.system(f"python3 utils/mkdup.py {duplicate_dir} {tar_sys_path} {backup_dir_path}")
 
 # Display backup paths and confirm user input
 print(f"Backup of target system is stored in {duplicate_dir}/duplicate_tar_sys")
@@ -134,8 +140,10 @@ print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path =
 input_val = input()
 if input_val != "y":
     sys.exit(0)
-
-preprocess_tar_sys(tar_sys_path)
+blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+backup_blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
+preprocess_tar_sys(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
+preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
 
 os.system("./core")
 

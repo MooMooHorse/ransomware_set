@@ -60,10 +60,8 @@ def add_magic_num_2(tar_sys_path):
         for dir in dirs:
             os.rename(os.path.join(root, dir), os.path.join(root, magic_num_1_str + dir + magic_num_2_str))
 
-def launch_blktrace():
-    default_disk = BOOT_CONFIG["default_disk"]
+def launch_blktrace(blktrace_dir, device):
     default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
-    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
 
     # Create blktrace_dir if not exists
     if not os.path.isdir(blktrace_dir):
@@ -81,20 +79,20 @@ def launch_blktrace():
         time.sleep(WAIT_TIME_SEC)
         return process
 
-    blktrace_process_pid = _launch_blktrace(default_disk, default_trace_file_path).pid + 1
+    blktrace_process_pid = _launch_blktrace(device, default_trace_file_path).pid + 1
 
     # dump blktrace_process.pid to a file
     with open(f"{blktrace_dir}/blktrace_pid", "w+") as f:
         f.write(f"{blktrace_process_pid}")
 
-def dump_trace_file():
+def dump_trace_file(blktrace_dir):
     """
     Cloase the blktrace program and dump the trace to output file
     """
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
     default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
-    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+    
     import subprocess
     def _launch_blkparse(trace_file, output_file):
         # sudo blkparse -i tracefile -f "%T %S %N %3d\n"
@@ -109,10 +107,9 @@ def dump_trace_file():
     # now we can remove the trace files
     # os.system(f"sudo rm {default_trace_file_path}*")
     # now we re-launch blktrace
-    # launch_blktrace()
+    # launch_blktrace(blktrace_dir)
 
-def clear_trace_file():
-    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+def clear_trace_file(blktrace_dir):
     # clear the blktrace_dir
     if os.path.isdir(blktrace_dir):
         shutil.rmtree(blktrace_dir)
@@ -179,9 +176,8 @@ def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
 
     return unencrpyted
 
-def parse_trace_file():
+def parse_trace_file(blktrace_dir):
     default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
-    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
     trace_path = BOOT_CONFIG["trace_path"]
     dump_path = f"{blktrace_dir}/dump"
     device_path = BOOT_CONFIG["default_disk"]
@@ -216,39 +212,60 @@ def parse_trace_file():
     print(f"Number of unencrpyted bytes: {unencrpted}")
 
 
-def preprocess_tar_sys(tar_sys_path):
+def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     """
     Add magic number to the target system
     """
     files_sync(tar_sys_path)
-    launch_blktrace()
+    launch_blktrace(blktrace_dir, device)
     add_magic_num_1_3(tar_sys_path)
     add_magic_num_2(tar_sys_path)
     files_sync(tar_sys_path)
-    dump_trace_file() # it will implicitly close the blktrace
-    # parse_trace_file()
+    dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
+    # parse_trace_file(blktrace_dir)
+    
+def preprocess_backup_dir(tar_sys_path, blktrace_dir, device):
+    files_sync(tar_sys_path)
+    launch_blktrace(blktrace_dir, device)
+    add_magic_num_1_3(tar_sys_path)
+    add_magic_num_2(tar_sys_path)
+    files_sync(tar_sys_path)
+    dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
 
-def _run_ransomware():
+def _run_ransomware(blktrace_dir):
     """
     Ransomware should be an executable file in the ransomware directory.
     It will only encrypte the files in the target system.
     """
+    import subprocess
     cmd = RANS_OPTIONS["cmd"]
     print(f"Running ransomware... with command {cmd}")
     # current dir
     cur_dir = os.getcwd()
     print(f"Current dir is {cur_dir}")
-    os.system(cmd)
+    
+    rans_proc = subprocess.Popen(cmd.split(), cwd=cur_dir)
+    # Launch strace with the ransomware command as a child process
+    rans_pid = rans_proc.pid
+    dbg_fname = f"{blktrace_dir}/strace.log"
+    strace_cmd = ["sudo","strace", "-o", dbg_fname, "-p", f"{rans_pid}"]
+    strace_proc = subprocess.Popen(strace_cmd)
+    # Wait for the ransomware process to finish and obtain its exit status
+    exit_status = rans_proc.wait()
+    # Print the exit status
+    print(f"Ransomware process exited with status {exit_status}")
+    # Terminate the strace process
+    subprocess.run(["sudo", "pkill", "strace"])
 
-def run_ransomware(tar_sys_path):
+def run_ransomware(tar_sys_path, blktrace_dir, device):
     """
     Enable the blk trace, run ransomware, then close the blk trace
     """
-    clear_trace_file()
+    clear_trace_file(blktrace_dir)
     files_sync(tar_sys_path)
-    launch_blktrace()
-    _run_ransomware()
-    dump_trace_file() # it will implicitly close the blktrace
+    launch_blktrace(blktrace_dir, device)
+    _run_ransomware(blktrace_dir)
+    dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
 
 def main():
     """
@@ -262,6 +279,7 @@ def main():
     4. then we go back to the C++ core framework by terminating this process
     note : 4. also implies that in C++ framework, we need to wait for this process to terminate before we can continue
     """
+    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
     for arg in sys.argv[1:]:
         if arg.startswith("-run"):
             # This should be executed in the parent directory of the file, do a sanity check here
@@ -269,7 +287,7 @@ def main():
                 print("Please run this script in the parent directory of rans_test directory")
                 sys.exit(1)
             tar_sys_path = PATHS["tar_sys_path"]
-            run_ransomware(tar_sys_path)
+            run_ransomware(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
