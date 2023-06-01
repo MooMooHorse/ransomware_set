@@ -55,6 +55,7 @@ public:
         this->cache->report();
         this->cache->snapshot();
         this->cache->snapshot_report(this->tarSysDumpPath);
+        this->cache->debug.dump_dbg_file();
         launch_ransomware();
         this->cache->debug.clear();
         this->cache->debug.enable_rans();
@@ -64,6 +65,7 @@ public:
         this->cache->snapshot();
         this->cache->snapshot_report(this->tarSysDumpPath);
         this->cache->debug.dump_snapshot();
+        this->cache->debug.dump_dbg_file();
     }
 private:
     /**

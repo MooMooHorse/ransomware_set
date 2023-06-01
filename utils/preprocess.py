@@ -211,6 +211,15 @@ def parse_trace_file(blktrace_dir):
             unencrpted += find_magic_1(device_path, int(line[1]), int(line[2]), sectors_set, dump_path)
     print(f"Number of unencrpyted bytes: {unencrpted}")
 
+def inject_debug_file(tar_sys_path):
+    """
+    Create a file for debugging purpose with length 1000 bytes.
+    Each byte is ASCII CHAR 'd'
+    """
+    debug_file_path = f"{tar_sys_path}/debug_file"
+    with open(debug_file_path, "wb+") as f:
+        for i in range(0, 1000):
+            f.write(MAGIC_NUM["DEBUG_MAGIC"].encode('utf-8'))
 
 def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     """
@@ -220,6 +229,7 @@ def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     launch_blktrace(blktrace_dir, device)
     add_magic_num_1_3(tar_sys_path)
     add_magic_num_2(tar_sys_path)
+    inject_debug_file(tar_sys_path)
     files_sync(tar_sys_path)
     dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
     # parse_trace_file(blktrace_dir)

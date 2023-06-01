@@ -49,6 +49,12 @@ typedef struct CACHE_ENTRY {
     struct rb_node node;
 } cache_entry_t;
 
+typedef struct RECORD_DBG_FILE {
+    uint64_t sec_off;
+    uint64_t len;
+    int dye_color;
+} record_dbg_file_t;
+
 class BIO_debug {
 private:
     int BIO_hit; // how many times BIO cache is hit
@@ -57,9 +63,11 @@ private:
     int rans_en; // if ransomware has been enabled
     int rans_overwrite; // how many unencrypted bytes are overwritten by ranswomare at flush time
     int snapshot_encrypted, snapshot_unencrypted; // how many encrypted and unencrypted bytes are overwritten by snapshot
+    uint64_t dbg_magic;
+    std::vector<record_dbg_file_t*> dbg_files;
 public:
     BIO_debug() : BIO_hit(0), BIO_hit_empty(0), BIO_hit_encrpted(0),
-     BIO_hit_unencrypted(0), rans_en(0), rans_overwrite(0) {}
+     BIO_hit_unencrypted(0), rans_en(0), rans_overwrite(0), dbg_magic('d'), dbg_files(std::vector<record_dbg_file_t*>()) {}
     void clear() {
         this->BIO_hit = 0;
         this->BIO_hit_empty = 0;
@@ -102,6 +110,8 @@ public:
         }
         std::cout << "----here ending metadata info dump----" << std::endl;
     }
+    void record_dbg_file(const std::vector<char>& buf, uint64_t sec_off, uint64_t sec_base);
+    void dump_dbg_file();
     void dump_snapshot() {
         std::cout << "snapshot_encrypted snapshot_unencrypted" << std::endl;
         std::cout << this->snapshot_encrypted << " " << this->snapshot_unencrypted << std::endl;

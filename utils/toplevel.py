@@ -39,7 +39,7 @@ def mount_dev(dev_path, mount_path, cfs_type):
         os.mkdir(mount_path)
     if cfs_type == FS_EXT4:
         # mkfs.ext4
-        os.system(f"sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 {dev_path} {mount_path}")
+        os.system(f"sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 -o {dev_path} {mount_path}")
     elif cfs_type == FS_NTFS:
         os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
     elif cfs_type == FS_F2FS:

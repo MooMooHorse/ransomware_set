@@ -16,6 +16,6 @@ GEN_CONFIG = {
     'chunk_size' : 1024,
     'tar_sys_path' : 'rans_test/tar_sys',
     'num_threads' : 5,
-    'mode' : MODE_DELETECREATE,
+    'mode' : MODE_OVERWRITE,
 }
 

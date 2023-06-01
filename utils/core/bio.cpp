@@ -180,7 +180,47 @@ static struct rb_node* rb_search(struct rb_root* root, uint64_t l) {
     return NULL;
 }
 
+void BIO_debug::record_dbg_file(const std::vector<char>& buf, uint64_t sec_off, uint64_t sec_base) {
+    int ret = 0;
+    uint32_t i;
+    uint64_t big_magic, target_magic, encrypted_magic;
+    uint64_t _magic1, _magic2, _magic3, _magic4;
+    int dye_color = 0;
+    record_dbg_file_t *record = new record_dbg_file_t;
 
+    target_magic = ((this->dbg_magic) << 24) | ((this->dbg_magic) << 16) | ((this->dbg_magic) << 8) | (this->dbg_magic);
+    encrypted_magic = ((ENCRYPT(this->dbg_magic)) << 24) | ((ENCRYPT(this->dbg_magic)) << 16) | ((ENCRYPT(this->dbg_magic)) << 8) | (ENCRYPT(this->dbg_magic));
+
+    for(i = SEC_TO_BYTES(sec_off); i < SEC_TO_BYTES(sec_off) + SEC_SIZE; i += 4) {
+        _magic1 = buf[i]; _magic2 = buf[i + 1]; _magic3 = buf[i + 2]; _magic4 = buf[i + 3];
+        big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
+        ret += (big_magic == target_magic) * 4;
+        ret += (big_magic == encrypted_magic) * 4;
+        if(big_magic == target_magic) {
+            dye_color = 1 + 10 * (this->rans_en);
+        } else if(big_magic == encrypted_magic) {
+            dye_color = 2 + 10 * (this->rans_en);
+        }
+    }
+    if(ret < 100) {
+        delete record;
+        return;
+    }
+    record->sec_off = sec_off + sec_base;
+    record->len = ret;
+    record->dye_color = dye_color;
+    this->dbg_files.push_back(record);
+}
+
+void BIO_debug::dump_dbg_file() {
+    // iterate through this->dbg_files, for each record, dump the corresponding sectors out to screen
+    std::cout << ":::::: dump_dbg_file ::::::" << std::endl;
+    std::vector<record_dbg_file_t*>::iterator it;
+    for(it = this->dbg_files.begin(); it != this->dbg_files.end(); it++) {
+        record_dbg_file_t* record = *it;
+        std::cout << "sec_off: " << record->sec_off << " len: " << record->len << " dye_color: " << record->dye_color << std::endl;
+    }
+}
 
 int BIO_Cache::get_encrpted(const std::vector<char>& buf, uint64_t sec_off) {
     // iterate buf starting from SEC_TO_BYTES(sec_off), count the number of bytes == 255 - this->magic_3
@@ -260,6 +300,7 @@ void BIO_Cache::flush() {
             this->debug.rans_overwrite_bytes(ceh->unencrypted);
             ceh->encrypted = get_encrpted(data, ceh->l - l);
             ceh->unencrypted = get_unencrpted(data, ceh->l - l);
+            this->debug.record_dbg_file(data, ceh->l - l, l);
             this->encrypted_len += ceh->encrypted;
             this->unencrypted_len += ceh->unencrypted;
         }

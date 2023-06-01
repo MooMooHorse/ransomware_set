@@ -88,6 +88,7 @@ MAGIC_NUM = {
     "MAGIC_NUM2_04" : 0x25,
     # Magic number 3 is for each byte of the file data
     "MAGIC_NUM3" : 0x41,
+    'DEBUG_MAGIC' : 'd',
 }
 
 PYTHON_RANS_COMMAND = "python3 utils/cryptosoft/ransomware.py"
