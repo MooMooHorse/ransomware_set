@@ -41,11 +41,12 @@
 #include <linux/iomap.h>
 #include <linux/iversion.h>
 
+
 #include "ext4_jbd2.h"
 #include "xattr.h"
 #include "acl.h"
 #include "truncate.h"
-
+#include "../../diag/diag.h"
 #include "../../ssd/ssd_stat.h"
 
 #include <trace/events/ext4.h>
@@ -564,6 +565,9 @@ int ext4_map_blocks(handle_t *handle, struct inode *inode,
 		retval = ext4_ind_map_blocks(handle, inode, map, flags &
 					     EXT4_GET_BLOCKS_KEEP_SIZE);
 	}
+	// if(DIAG_INODE_IS_TAR(inode)) {
+	// 	DIAG_HINT(DIAG_EN, KERN_ERR, "# blocks allocated %d\n", retval);
+	// }
 	if (retval > 0) {
 		unsigned int status;
 
@@ -1303,12 +1307,13 @@ retry_journal:
 
 #ifdef CONFIG_FS_ENCRYPTION
 	if (ext4_should_dioread_nolock(inode))
-		ret = ext4_block_write_begin(page, pos, len,
+		ret = diag_block_write_begin(file, page, pos, len,
 					     ext4_get_block_unwritten);
 	else
-		ret = ext4_block_write_begin(page, pos, len,
+		ret = diag_block_write_begin(file, page, pos, len,
 					     ext4_get_block);
 #else
+	// printk(KERN_ERR "------fuck-------\n");
 	if (ext4_should_dioread_nolock(inode))
 		ret = __block_write_begin(page, pos, len,
 					  ext4_get_block_unwritten);

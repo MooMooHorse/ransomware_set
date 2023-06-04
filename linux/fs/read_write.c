@@ -25,6 +25,8 @@
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 
+#include "../diag/diag.h"
+
 const struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
 	.read_iter	= generic_file_read_iter,
@@ -470,6 +472,10 @@ static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t 
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = *ppos;
 	iov_iter_init(&iter, WRITE, &iov, 1, len);
+
+	if(DIAG_FILE_IS_TAR(filp)) {
+		parse_kiocb_flags(filp);
+	}
 
 	ret = call_write_iter(filp, &kiocb, &iter);
 	BUG_ON(ret == -EIOCBQUEUED);

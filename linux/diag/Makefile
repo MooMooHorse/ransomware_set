@@ -1,0 +1,1 @@
+obj-y :=	write_begin.o
