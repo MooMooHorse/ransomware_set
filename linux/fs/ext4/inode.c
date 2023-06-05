@@ -1256,6 +1256,9 @@ static int ext4_write_begin(struct file *file, struct address_space *mapping,
 		return -EIO;
 
 	trace_ext4_write_begin(inode, pos, len, flags);
+	// if(DIAG_FILE_IS_TAR(file)) {
+	// 	printk(KERN_ERR "%s called\n", __func__);
+	// }
 	/*
 	 * Reserve one block more for addition to orphan list in case
 	 * we allocate blocks but write fails for some reason
@@ -1307,10 +1310,10 @@ retry_journal:
 
 #ifdef CONFIG_FS_ENCRYPTION
 	if (ext4_should_dioread_nolock(inode))
-		ret = diag_block_write_begin(file, page, pos, len,
+		ret = ext4_block_write_begin(page, pos, len,
 					     ext4_get_block_unwritten);
 	else
-		ret = diag_block_write_begin(file, page, pos, len,
+		ret = ext4_block_write_begin(page, pos, len,
 					     ext4_get_block);
 #else
 	// printk(KERN_ERR "------fuck-------\n");
@@ -1850,12 +1853,21 @@ static int ext4_da_map_blocks(struct inode *inode, sector_t iblock,
 		invalid_block = ~0;
 
 	map->m_flags = 0;
+
+	if(DIAG_INODE_IS_TAR(inode)) {
+		printk(KERN_ERR "ext4_da_map_blocks(): inode %lu, max_blocks %u, logical block %lu\n", inode->i_ino, map->m_len,
+		  (unsigned long) map->m_lblk);
+	}
+
 	ext_debug("ext4_da_map_blocks(): inode %lu, max_blocks %u,"
 		  "logical block %lu\n", inode->i_ino, map->m_len,
 		  (unsigned long) map->m_lblk);
 
 	/* Lookup extent status tree firstly */
 	if (ext4_es_lookup_extent(inode, iblock, &es)) {
+		if(DIAG_INODE_IS_TAR(inode)) {
+			printk(KERN_ERR "extent found!\n");
+		}
 		if (ext4_es_is_hole(&es)) {
 			retval = 0;
 			down_read(&EXT4_I(inode)->i_data_sem);
@@ -1898,8 +1910,16 @@ static int ext4_da_map_blocks(struct inode *inode, sector_t iblock,
 	down_read(&EXT4_I(inode)->i_data_sem);
 	if (ext4_has_inline_data(inode))
 		retval = 0;
-	else if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS))
+	else if (ext4_test_inode_flag(inode, EXT4_INODE_EXTENTS)){
 		retval = ext4_ext_map_blocks(NULL, inode, map, 0);
+		if(!retval) {
+			if(DIAG_INODE_IS_TAR(inode)) {
+				printk(KERN_ERR "block have not been allocated\n");
+			}
+		} else if(DIAG_INODE_IS_TAR(inode)) {
+				printk(KERN_ERR "%d of blocks are allocated\n", retval);
+		}
+	}
 	else
 		retval = ext4_ind_map_blocks(NULL, inode, map, 0);
 
@@ -1977,6 +1997,9 @@ int ext4_da_get_block_prep(struct inode *inode, sector_t iblock,
 	 * the same as allocated blocks.
 	 */
 	ret = ext4_da_map_blocks(inode, iblock, &map, bh);
+	// if(DIAG_INODE_IS_TAR(inode)) {
+	// 	printk(KERN_ERR "ret = %d, iblock = %lu, ino_num = %lu\n", ret, iblock, inode->i_ino);
+	// }
 	if (ret <= 0)
 		return ret;
 
@@ -4002,10 +4025,14 @@ void ext4_set_aops(struct inode *inode)
 	}
 	if (IS_DAX(inode))
 		inode->i_mapping->a_ops = &ext4_dax_aops;
-	else if (test_opt(inode->i_sb, DELALLOC))
+	else if (test_opt(inode->i_sb, DELALLOC)){
+		// printk_ratelimited(KERN_ERR "WTF?\n"); // haor2 : it turns out normally this is called
 		inode->i_mapping->a_ops = &ext4_da_aops;
-	else
+	}
+	else {
+		// printk(KERN_ERR "normal\n"); // haor2 : it turns out normally this is not called
 		inode->i_mapping->a_ops = &ext4_aops;
+	}
 }
 
 static int __ext4_block_zero_page_range(handle_t *handle,

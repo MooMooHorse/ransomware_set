@@ -10,6 +10,7 @@ framework_dir = "rans_test"
 FS_EXT4 = 0
 FS_NTFS = 1
 FS_F2FS = 2
+FS_EXT2 = 3
 
 cfs_type = FS_EXT4
 
@@ -27,7 +28,6 @@ if cfs_type == FS_NTFS:
 
 MOUNT_CONFIG = {
     'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
-    'fs_types' : ['ext4', 'ntfs', 'f2fs'],
     'cfs_type' : cfs_type,
     'enconding' : encoding_rule,
 }

@@ -472,10 +472,10 @@ static ssize_t new_sync_write(struct file *filp, const char __user *buf, size_t 
 	init_sync_kiocb(&kiocb, filp);
 	kiocb.ki_pos = *ppos;
 	iov_iter_init(&iter, WRITE, &iov, 1, len);
-
-	if(DIAG_FILE_IS_TAR(filp)) {
-		parse_kiocb_flags(filp);
-	}
+	// haor2 : make sure we are here and dump the flags
+	// if(DIAG_FILE_IS_TAR(filp)) {
+	// 	parse_kiocb_flags(filp);
+	// }
 
 	ret = call_write_iter(filp, &kiocb, &iter);
 	BUG_ON(ret == -EIOCBQUEUED);

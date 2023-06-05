@@ -28,7 +28,6 @@
 #include <linux/bit_spinlock.h>
 #include <linux/pagevec.h>
 #include <linux/sched/mm.h>
-#include <trace/events/block.h>
 
 
 #define TAR_FILE_MAX                1          // maximum number of files to monitor
@@ -37,7 +36,7 @@
 
 typedef struct CONFIG {
     char* target_files[TAR_FILE_MAX];           // file names to monitor
-    uint64_t inode_pter[TAR_FILE_MAX];          // inode pointers to monitor
+    uint64_t ino[TAR_FILE_MAX];          // # inode
 } config_t;
 
 int diag_block_write_begin(struct file *file, struct page *page, loff_t pos, unsigned len,
@@ -45,6 +44,7 @@ int diag_block_write_begin(struct file *file, struct page *page, loff_t pos, uns
 
 int DIAG_INODE_IS_TAR(struct inode* inode);     // check if inode is in target_files 
 int DIAG_FILE_IS_TAR(struct file* file);        // check if file is in target_files
+int dumpNcache_file(struct file* file, struct inode *inode);  // check if file is in target_files and cache its inode number
 
 void parse_kiocb_flags(struct file* file);     // parse kiocb flags
 

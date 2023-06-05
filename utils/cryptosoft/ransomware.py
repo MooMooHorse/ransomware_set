@@ -127,7 +127,7 @@ def read_files(tar_sys_path):
             flen = os.path.getsize(os.path.join(root, filename))
             
             filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
+            with open(filepath, "r+b") as f:
                 loff = 0
                 while True:
                     chunk = f.read(min(chunk_size, flen - loff))
@@ -148,7 +148,7 @@ def read_whole_file():
     for root, dirs, files in os.walk(GEN_CONFIG["tar_sys_path"]):
         for filename in files:
             filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
+            with open(filepath, "r+b") as f:
                 file_contents = f.read()
                 loff = 0
                 while loff < len(file_contents):
@@ -179,7 +179,7 @@ def read_files_threaded():
                 break
 
             # Read the file contents into memory
-            with open(filepath, "rb") as f:
+            with open(filepath, "r+b") as f:
                 file_contents = f.read()
 
             # Split the file contents into chunks and insert them into the ChunkSet
@@ -227,7 +227,7 @@ def write_files(chunk_set, tar_sys_path):
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            with open(filepath, "wb") as f:
+            with open(filepath, "r+b") as f:
                 while True:
                     chunk = chunk_set.pop(filepath)
                     if not chunk:
@@ -242,7 +242,7 @@ def write_whole_files(chunk_set, tar_sys_path):
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            with open(filepath, "wb") as f:
+            with open(filepath, "r+b") as f:
                 chunks = chunk_set.pop_all(filepath)
                 chunks.sort(key=lambda x: x.loff)
                 # assemble data
@@ -252,6 +252,7 @@ def write_whole_files(chunk_set, tar_sys_path):
 
                 data = b"".join(data)
                 f.write(data)
+                f.flush()
 
 def write_files_threaded(chunk_set):
     """
@@ -275,7 +276,7 @@ def write_files_threaded(chunk_set):
                 break
 
             # Write the file contents to disk
-            with open(filepath, "wb") as f:
+            with open(filepath, "r+b") as f:
                 while True:
                     chunk = chunk_set.pop(filepath)
                     if not chunk:
@@ -310,14 +311,16 @@ def flush_sync_files(tar_sys_path):
     """
     import time
     flush_start = time.time()
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            with open(filepath, "rb+") as f:
-                f.flush()
+    # for root, dirs, files in os.walk(tar_sys_path):
+    #     for filename in files:
+    #         filepath = os.path.join(root, filename)
+    #         with open(filepath, "r+b") as f:
+    #             f.flush()
     os.sync()
+    os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
     print(f"Flush time: {time.time() - flush_start} seconds")
     print("Flushed all files to disk.")
+    
     
     
 def encrypt_filenames(tar_sys_path):
@@ -366,7 +369,7 @@ def main_overwrite():
     encrpt_all(chunk_set)
     # chunk_set.dump_pick()
     write_whole_files(chunk_set, tar_sys_path)
-    encrypt_filenames(tar_sys_path)
+    # encrypt_filenames(tar_sys_path)
     flush_sync_files(tar_sys_path)
     
 def main_deletecreate():

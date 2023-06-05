@@ -19,14 +19,13 @@ sys.path.append(parent_dir)
 
 from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG
-from config import FS_EXT4, FS_NTFS, FS_F2FS, BOOT_CONFIG
+from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, BOOT_CONFIG
 from preprocess import preprocess_tar_sys, preprocess_backup_dir
 
 
 dev_list = MOUNT_CONFIG['dev_list']
 dev_used = []
 
-fs_types = MOUNT_CONFIG['fs_types']
 cfs_type = MOUNT_CONFIG['cfs_type']
 
 def mount_dev(dev_path, mount_path, cfs_type):
@@ -44,6 +43,8 @@ def mount_dev(dev_path, mount_path, cfs_type):
         os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
     elif cfs_type == FS_F2FS:
         os.system(f"sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
+    elif cfs_type == FS_EXT2:
+        os.system(f"sudo mkfs.ext2 {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
         
 
     dev_list.remove(dev_path)

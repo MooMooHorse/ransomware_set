@@ -43,6 +43,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/filemap.h>
 
+#include "../diag/diag.h"
+
 /*
  * FIXME: remove all knowledge of the buffer layer from the core VM
  */
@@ -3303,7 +3305,7 @@ again:
 
 		if (mapping_writably_mapped(mapping))
 			flush_dcache_page(page);
-
+		// haor2 : here we copy from user buffer to page then prepare it to writeback.
 		copied = iov_iter_copy_from_user_atomic(page, i, offset, bytes);
 		flush_dcache_page(page);
 
@@ -3392,7 +3394,7 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		 */
 		if (written < 0 || !iov_iter_count(from) || IS_DAX(inode))
 			goto out;
-
+		
 		status = generic_perform_write(file, from, pos = iocb->ki_pos);
 		/*
 		 * If generic_perform_write() returned a synchronous error
@@ -3425,6 +3427,9 @@ ssize_t __generic_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 			 */
 		}
 	} else {
+		
+		dumpNcache_file(file, inode); // haor2
+
 		written = generic_perform_write(file, from, iocb->ki_pos);
 		if (likely(written > 0))
 			iocb->ki_pos += written;

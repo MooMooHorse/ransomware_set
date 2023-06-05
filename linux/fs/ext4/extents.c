@@ -34,6 +34,8 @@
 
 #include <trace/events/ext4.h>
 
+#include "../../diag/diag.h"
+
 /*
  * used by extent splitting.
  */
@@ -4287,6 +4289,11 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 	 * requested block isn't allocated yet;
 	 * we couldn't try to create block if create flag is zero
 	 */
+
+	if(DIAG_INODE_IS_TAR(inode)) {
+		printk(KERN_ERR "requested block isn't allocated yet\n");
+	}
+	
 	if ((flags & EXT4_GET_BLOCKS_CREATE) == 0) {
 		ext4_lblk_t hole_start, hole_len;
 
@@ -4366,6 +4373,10 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
 		allocated = ext4_ext_get_actual_len(&newex);
 	else
 		allocated = map->m_len;
+
+	if(DIAG_INODE_IS_TAR(inode)) {
+		printk(KERN_ERR "allocated = %d\n", allocated);
+	}
 
 	/* allocate new block */
 	ar.inode = inode;
