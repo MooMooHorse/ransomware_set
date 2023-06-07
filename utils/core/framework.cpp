@@ -18,12 +18,13 @@ private:
     BIO_Cache* cache;
     uint64_t magic1, magic2, magic3;
     encoding_t encoding;
+    int framework_ind;
 public:
     TestingFramework(const std::string& traceFile, const std::string& device, 
     const std::string& outputDir, const std::string& tarSysDump,
-    const uint64_t& m1, const uint64_t& m2, const uint64_t& m3, const encoding_t& encoding)
+    const uint64_t& m1, const uint64_t& m2, const uint64_t& m3, const encoding_t& encoding, int framework_ind)
         : traceFilePath(traceFile), diskDevice(device), outputDirPath(outputDir), tarSysDumpPath(tarSysDump),
-        magic1(m1), magic2(m2), magic3(m3), encoding(encoding) {}
+        magic1(m1), magic2(m2), magic3(m3), encoding(encoding), framework_ind(framework_ind) {}
     void printParameters() const {
         // core functionality initialized
         std::cout << "Core Functionality Initialized..." << std::endl;
@@ -55,8 +56,11 @@ public:
         this->cache->report();
         this->cache->snapshot();
         this->cache->snapshot_report(this->tarSysDumpPath);
-        this->cache->debug.dump_dbg_file();
-        launch_ransomware();
+        // this->cache->debug.dump_dbg_file();
+        
+        if(framework_ind == 0) launch_ransomware();
+        else launch_ransomware_backup();
+        
         this->cache->debug.clear();
         this->cache->debug.enable_rans();
         cache_BIO();
@@ -65,7 +69,7 @@ public:
         this->cache->snapshot();
         this->cache->snapshot_report(this->tarSysDumpPath);
         this->cache->debug.dump_snapshot();
-        this->cache->debug.dump_dbg_file();
+        // this->cache->debug.dump_dbg_file();
     }
 private:
     /**
@@ -145,12 +149,38 @@ private:
         std::cout << "Output file: " << outputDirPath + "/ransomware_output.txt" << std::endl;
     }
 
+    void launch_ransomware_backup() {
+        std::string cmd = "python3 utils/preprocess.py -runbackup";
+        char buffer[128];
+        std::string args = "";
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) {
+            std::cerr << "Failed to run command" << std::endl;
+            return;
+        }
+        while (std::fgets(buffer, sizeof(buffer), pipe) != NULL) {
+            args += buffer;
+        }
+        pclose(pipe);
+
+        // if the output directory does not exist, create it
+        std::string cmd2 = "mkdir -p " + outputDirPath;
+        system(cmd2.c_str());
+
+        // put the output of the python script into a file
+        std::ofstream file(outputDirPath + "/backup_ransomware_output.txt");
+        file << args;
+        file.close();
+        std::cout << "Ransomware launched." << std::endl;
+        std::cout << "Output file: " << outputDirPath + "/backup_ransomware_output.txt" << std::endl;
+    }
+
 };
 
 
 
 int main() {
-    std::string cmd = "python3 config.py -tfp -dd -cd -tsdp -ma -en";
+    std::string cmd = "python3 config.py -tfp -dd -cd -tsdp -ma -en -bkuptfp -bkupdd";
     char buffer[128];
     std::string args = "";
     FILE* pipe = popen(cmd.c_str(), "r");
@@ -171,9 +201,14 @@ int main() {
     }
 
     TestingFramework tf(arg_list[0], arg_list[1], arg_list[2], arg_list[3],
-    std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]), (encoding_t)std::stoull(arg_list[7]));
+    std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]), (encoding_t)std::stoull(arg_list[7]), 0);
     tf.printParameters();
     tf.run();
+    // TestingFramework
+    // TestingFramework tf_backup(arg_list[8], arg_list[9], arg_list[2], "", 
+    // std::stoull(arg_list[4]), std::stoull(arg_list[5]), std::stoull(arg_list[6]), (encoding_t)std::stoull(arg_list[7]), 1);
+    // tf_backup.printParameters();
+    // tf_backup.run();
     return 0;
 }
 

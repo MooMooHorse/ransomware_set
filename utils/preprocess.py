@@ -26,6 +26,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from config import BOOT_CONFIG, MAGIC_NUM, PATHS, RANS_OPTIONS
+from config import print_red
 
 def add_magic_num_1_3(tar_sys_path):
     """
@@ -61,7 +62,7 @@ def add_magic_num_2(tar_sys_path):
             os.rename(os.path.join(root, dir), os.path.join(root, magic_num_1_str + dir + magic_num_2_str))
 
 def launch_blktrace(blktrace_dir, device):
-    default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
+    trace_file_path = blktrace_dir + '/tracefile'
 
     # Create blktrace_dir if not exists
     if not os.path.isdir(blktrace_dir):
@@ -79,7 +80,7 @@ def launch_blktrace(blktrace_dir, device):
         time.sleep(WAIT_TIME_SEC)
         return process
 
-    blktrace_process_pid = _launch_blktrace(device, default_trace_file_path).pid + 1
+    blktrace_process_pid = _launch_blktrace(device, trace_file_path).pid + 1
 
     # dump blktrace_process.pid to a file
     with open(f"{blktrace_dir}/blktrace_pid", "w+") as f:
@@ -91,7 +92,7 @@ def dump_trace_file(blktrace_dir):
     """
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
-    default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
+    trace_file_path = blktrace_dir + '/tracefile'
     
     import subprocess
     def _launch_blkparse(trace_file, output_file):
@@ -103,7 +104,7 @@ def dump_trace_file(blktrace_dir):
     # sleep for 0.01 seconds to make sure blktrace is shut down
     import time
     time.sleep(WAIT_TIME_SEC)
-    _launch_blkparse(default_trace_file_path, f"{blktrace_dir}/blkparse_output")
+    _launch_blkparse(trace_file_path, f"{blktrace_dir}/blkparse_output")
     # now we can remove the trace files
     # os.system(f"sudo rm {default_trace_file_path}*")
     # now we re-launch blktrace
@@ -120,26 +121,12 @@ def files_sync(tar_sys_path):
     Sync all the files in target system to disk
     Refer to https://stackoverflow.com/questions/15983272/does-python-have-sync
     """
-    current_dir = os.getcwd()
     print("start syncing files to disk...")
-    # print(f"Syncing files in {current_dir} / {tar_sys_path} to disk...")
-    # iterate through all the files in the target system and flush them
-    for root, dirs, files in os.walk(tar_sys_path):
-        for file in files:
-            with open(os.path.join(root, file), "rb") as f:
-                f.flush()
-
-    # Before we flushed the internal buffers of all the files in the target system, now we need to sync the file system buffers to disk
-    print("start syncing file system buffers to disk...")
-    os.sync()
-    os.system("sync")
-    os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
-    # sleep 5 seconds to make sure all the buffers are synced to disk
-    # import time
-    # time.sleep(5)
+    os.system("sudo sync")
+    # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
 
 def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
-    """
+    """ Debugging purpose function
     Given sector number produced by blkparse, we pipe that into dd command and dump the sector information.
     The sector number is given, and we want to dump `bytes` bytes information starting from the sector number.
     By dumping, I mean we scan the sector information and find the magic number 1, if we find it, we increment the counter unencrpyted by 1.
@@ -291,15 +278,23 @@ def main():
     4. then we go back to the C++ core framework by terminating this process
     note : 4. also implies that in C++ framework, we need to wait for this process to terminate before we can continue
     """
-    blktrace_dir = BOOT_CONFIG["blktrace_dir"]
     for arg in sys.argv[1:]:
         if arg.startswith("-run"):
             # This should be executed in the parent directory of the file, do a sanity check here
             if not os.path.isdir("rans_test"):
-                print("Please run this script in the parent directory of rans_test directory")
+                print_red("Please run this script in the parent directory of rans_test directory")
                 sys.exit(1)
+            blktrace_dir = BOOT_CONFIG["blktrace_dir"]
             tar_sys_path = PATHS["tar_sys_path"]
             run_ransomware(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
+        elif arg.startswith("-runbackup"):
+            # This should be executed in the parent directory of the file, do a sanity check here
+            if not os.path.isdir("rans_test"):
+                print_red("Please run this script in the parent directory of rans_test directory")
+                sys.exit(1)
+            blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
+            tar_sys_path = PATHS["backup_dir_path"]
+            run_ransomware(tar_sys_path, blktrace_dir, BOOT_CONFIG["backup_disk"])
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

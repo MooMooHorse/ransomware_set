@@ -10,6 +10,7 @@ def debug(*args, **kwargs):
 
 
 def rm_groups(output_dir):
+    return
     # remove all groups recorded in <output_directory>/access/groups from linux
     with open(os.path.join(output_dir, "access/groups"), "r") as file:
         for line in file:
@@ -17,6 +18,7 @@ def rm_groups(output_dir):
             os.system(f"sudo groupdel {group} 2> /dev/null")
 
 def rm_users(output_dir):
+    return
     # remove all users recorded in <output_directory>/access/users from linux
     with open(os.path.join(output_dir, "access/users"), "r") as file:
         for line in file:
@@ -25,6 +27,7 @@ def rm_users(output_dir):
             os.system(f"sudo userdel -r {user} 2> /dev/null")
 
 def clean_up_groups_users(output_dir):
+    return
     # if users file exists, remove it
     if os.path.isfile(os.path.join(output_dir, "access/users")):
         rm_users(output_dir)
@@ -45,6 +48,7 @@ def make_assignment(framework_dir_path, assignment_path):
     Assignment means we assign the users and groups with theirto the files and directories in the target system
     ...
     '''
+    return
     print(f"Making assignment to {framework_dir_path} from {assignment_path}")
     import time
     # We iterate through all files and directories the assignment file, and assign users and groups to them

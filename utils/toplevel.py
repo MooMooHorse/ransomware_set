@@ -56,25 +56,24 @@ def prepare_tar_sys(tar_sys_path):
 
     # Check if target system exists, if not, ask for user input
     if not os.path.isdir(dup_tar_sys_path):
-        num_groups = TAR_SYS_PARAMS["num_groups"]
-        num_users = TAR_SYS_PARAMS["num_users"]
-        num_permissions = TAR_SYS_PARAMS["num_permissions"]
-        os.system(f"python3 utils/gen_tar_sys.py {number_of_files} {median_length_of_files} {file_type_set} {dup_tar_sys_path} {framework_dir} {num_groups} {num_users} {num_permissions}")
+        os.system(f"python3 utils/gen_tar_sys.py {number_of_files} {median_length_of_files} {file_type_set} {dup_tar_sys_path} {framework_dir}")
 
     mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 
     # change the owner of the root_path to the current user
     os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
 
-    # move all files in dup_tar_sys_path to tar_sys_path
-    os.system(f"sudo mv {dup_tar_sys_path}/* {tar_sys_path}")
+    # move all files in dup_tar_sys_path to tar_sys_path without using wildcard because the number of files is too large
+    for file in os.listdir(dup_tar_sys_path):
+        shutil.move(f"{dup_tar_sys_path}/{file}", tar_sys_path)
     
 import subprocess
 
 def prepare_backup_dir(tar_sys_path, backup_dir_path):
     mount_dev(BOOT_CONFIG['backup_disk'], backup_dir_path, cfs_type)
     os.system(f"sudo chown -R {os.getlogin()} {backup_dir_path}")
-    os.system(f"cp -rp {tar_sys_path}/* {backup_dir_path}")
+    for file in os.listdir(tar_sys_path):
+        os.system(f"cp -rp {tar_sys_path}/{file} {backup_dir_path}")
 
 def handle_flags(tar_sys_path, backup_dir_path):
     for arg in sys.argv[1:]:
@@ -87,7 +86,8 @@ def handle_flags(tar_sys_path, backup_dir_path):
         elif arg.startswith("--clean"):
             # remove rams_test directory with sudo and exit
             clean_up_groups_users(f"{framework_dir}") # first remove all groups and users created by gen_tar_sys.py
-            os.system(f"sudo umount {tar_sys_path} && sudo umount {backup_dir_path} && sudo rm -rf rans_test")
+            # os.system(f"sudo umount {tar_sys_path} && sudo umount {backup_dir_path} && sudo rm -rf rans_test")
+            os.system(f"sudo umount {tar_sys_path} && sudo rm -rf rans_test")
             sys.exit(0)
         else:
             print("Invalid flag:", arg)
@@ -126,7 +126,7 @@ handle_flags(tar_sys_path, backup_dir_path)
 start = time.time()
 
 prepare_tar_sys(tar_sys_path)
-prepare_backup_dir(tar_sys_path, backup_dir_path)
+# prepare_backup_dir(tar_sys_path, backup_dir_path)
 
 print(f"finish preparing target system using {time.time() - start} seconds")
 
@@ -135,16 +135,15 @@ os.system(f"python3 utils/dump_tar_sys_info.py {tar_sys_info_path} {tar_sys_path
 
 
 # Display backup paths and confirm user input
-print(f"Backup of target system is stored in {duplicate_dir}/duplicate_tar_sys")
-print(f"Backup of backup directory is stored in {duplicate_dir}/duplicate_backup_dir")
 print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path = {rans_path}, backup_dir_path = {backup_dir_path} (y/n)")
 input_val = input()
 if input_val != "y":
     sys.exit(0)
+
 blktrace_dir = BOOT_CONFIG["blktrace_dir"]
 backup_blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
 preprocess_tar_sys(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
-preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
+# preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
 
 os.system("./core")
 

@@ -499,6 +499,10 @@ static void dump_tar_sys_info_env() {
 
 void BIO_Cache::snapshot_report(const std::string& dumpFilePath) {
     std::unordered_map<std::string, std::size_t> file_sizes;
+    // if dumpFilePath is empty string, directly return
+    if(dumpFilePath.empty()) {
+        return;
+    }
 
     std::cout << "----BIO Cache Snapshot Report----" << std::endl;
 

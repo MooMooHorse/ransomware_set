@@ -38,6 +38,7 @@ BOOT_CONFIG = {
     "default_trace_file_path" : "blktrace_dir/tracefile",
     "core_dir" : "core_dir",
     "trace_path" : "blktrace_dir/blkparse_output",
+    "backup_trace_path" : "backup_blktrace_dir/blkparse_output",
     "backup_blktrace_dir" : "backup_blktrace_dir",
     "backup_disk" : MOUNT_CONFIG['dev_list'][BACKUP_DISK],
 }
@@ -58,12 +59,12 @@ PATHS = {
 }
 # A set of parameters for the target system
 TAR_SYS_PARAMS = {
-    "number_of_files": 1000,
-    "median_length_of_files": 10000,
+    "number_of_files": 100,
+    "median_length_of_files": 100000,
     "file_type_set": 1,
-    "num_groups" : 3,
-    "num_users" : 1,
-    "num_permissions" : 3,
+    # "num_groups" : 3,
+    # "num_users" : 1,
+    # "num_permissions" : 3,
     
 }
 # A set of magic numbers used in the framework
@@ -99,10 +100,34 @@ RANS_OPTIONS = {
     "cmd" : PYTHON_RANS_COMMAND,
 }
 
+# ANSI escape sequences for different colors
+colors = {
+    'red': '\033[91m',
+    'green': '\033[92m',
+    'blue': '\033[94m',
+    'yellow': '\033[93m',
+    'reset': '\033[0m'
+}
+
+def print_red(msg):
+    print(colors['red'] + msg + colors['reset'])
+
+def print_green(msg):
+    print(colors['green'] + msg + colors['reset'])
+    
+def print_blue(msg):
+    print(colors['blue'] + msg + colors['reset'])
+    
+def print_yellow(msg):
+    print(colors['yellow'] + msg + colors['reset'])
+
+
 def main():
     args = []
     default_trace_file_path = BOOT_CONFIG["trace_path"]
+    backup_trace_file_path = BOOT_CONFIG["backup_trace_path"]
     default_disk = BOOT_CONFIG["default_disk"]
+    backup_disk = BOOT_CONFIG["backup_disk"]
     core_dir = BOOT_CONFIG["core_dir"]
     magic1 = ((MAGIC_NUM["MAGIC_NUM1_01"] << 24) + (MAGIC_NUM["MAGIC_NUM1_02"] << 16) + 
                 (MAGIC_NUM["MAGIC_NUM1_03"] << 8) + (MAGIC_NUM["MAGIC_NUM1_04"]))
@@ -124,6 +149,10 @@ def main():
             args.append(f"{PATHS['tar_sys_dump_path']}")
         elif arg.startswith("-en"): # encoding rule
             args.append(f"{encoding_rule}")
+        elif arg.startswith("-bkuptfp"): # backup trace file path
+            args.append(backup_trace_file_path)
+        elif arg.startswith("-bkupdd"): # backup disk
+            args.append(backup_disk)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
