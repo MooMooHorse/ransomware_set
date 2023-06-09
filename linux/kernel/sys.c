@@ -75,6 +75,8 @@
 #include "../ssd/bytefs_utils.h"
 #include "../ssd/ssd_stat.h"
 
+#include "../diag/diag.h"
+
 #include "uid16.h"
 
 #ifndef SET_UNALIGN_CTL
@@ -1673,91 +1675,20 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
 	return do_prlimit(current, resource, &new_rlim, NULL);
 }
 
-SYSCALL_DEFINE2(bytefs_control, unsigned int, operation_id, void *, data)
+SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_entry_t __user *, trace)
 {
-	int retval = 0;
-	uint64_t access_start, access_size;
-	void *buf;
-	static void *pin_buf = 0; 
+	int retval;
+	char* buf;
+
+	retval = 0;
+	
 	switch (operation_id)	{
 		case 0:
-			printk(KERN_WARNING "Bytefs ctl SSD reset\n");
-			retval = ssd_reset();
+			printk(KERN_ERR "hey! you called a system call diag_ctrl!\n");
+			
 			break;
 		case 1:
-			printk(KERN_WARNING "Bytefs ctl start SSD tests\n");
-			retval = ssd_test();
-			break;
-		case 2:
-			printk(KERN_WARNING "Bytefs ctl start threads\n");
-			retval = bytefs_start_threads();
-			break;
-		case 3:
-			printk(KERN_WARNING "Bytefs ctl stop threads\n");
-			retval = bytefs_stop_threads();
-			break;
-		case 4:
-			// read
-			printk(KERN_WARNING "Bytefs ctl read\n");
-			if (!data) return -1;
-			buf = kzalloc(2 * sizeof(uint64_t), GFP_KERNEL);
-			copy_from_user(buf, data, 2 * sizeof(uint64_t));
-			access_start = ((uint64_t *) buf)[0];
-			access_size = ((uint64_t *) buf)[1];
-			kfree(buf);
-
-			buf = kzalloc(access_size, GFP_KERNEL);
-			retval = byte_issue(0, access_start, access_size, buf);
-			copy_to_user(data + 2 * sizeof(uint64_t), buf, access_size);
-			kfree(buf);
-			break;
-		case 5:
-			// write
-			printk(KERN_WARNING "Bytefs ctl write\n");
-			if (!data) return -1;
-			buf = kzalloc(2 * sizeof(uint64_t), GFP_KERNEL);
-			copy_from_user(buf, data, 2 * sizeof(uint64_t));
-			access_start = ((uint64_t *) buf)[0];
-			access_size = ((uint64_t *) buf)[1];
-			kfree(buf);
-			
-			buf = kzalloc(access_size, GFP_KERNEL);
-			copy_from_user(buf, data + 2 * sizeof(uint64_t), access_size);
-			retval = byte_issue(1, access_start, access_size, buf);
-			kfree(buf);
-			break;
-		case 40:
-			printk(KERN_WARNING "stat start\n");
-			retval = turn_on_stat();
-			break;
-		case 41:
-			printk(KERN_WARNING "stat reset and turn off\n");
-			retval = reset_ssd_stat();
-			break;
-		case 42:
-			printk(KERN_WARNING "stat print\n");
-			retval = print_stat(data);
-			break;
-		case 906:
-			if (!data) return -1;
-			if (pin_buf != 0) {
-				printk("pin already exist");
-				return -1;
-			}
-			buf = kzalloc(sizeof(uint64_t), GFP_KERNEL);
-			copy_from_user(buf, data, sizeof(uint64_t));
-			access_size = ((uint64_t *) buf)[0];
-			printk(KERN_WARNING "pin memory %lld MB\n", access_size);
-			pin_buf = vmalloc(access_size * 1024 * 1024);
-			break;
-		case 907:
-			if (pin_buf == 0) {
-				printk("pin does not exist");
-				return -1;
-			}
-			vfree(pin_buf);
-			pin_buf = 0;
-			break;
+			printk(KERN_ERR "KERNEL LEVEL BIO TRACE BEGIN\n");
 		default:
 			printk(KERN_ERR "Invalid operation id %d\n", operation_id);
 			retval = -1;

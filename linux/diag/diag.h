@@ -29,6 +29,8 @@
 #include <linux/pagevec.h>
 #include <linux/sched/mm.h>
 
+#include "diag_syscall.h"
+
 
 #define TAR_FILE_MAX                1          // maximum number of files to monitor
 
@@ -38,6 +40,7 @@ typedef struct CONFIG {
     char* target_files[TAR_FILE_MAX];           // file names to monitor
     uint64_t ino[TAR_FILE_MAX];          // # inode
 } config_t;
+
 
 int diag_block_write_begin(struct file *file, struct page *page, loff_t pos, unsigned len,
 				  get_block_t *get_block);
