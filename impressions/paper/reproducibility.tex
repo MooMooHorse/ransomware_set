@@ -1,0 +1,23 @@
+\section{Reproducing Results}
+For this assignment, I tried to recreate the experiments described in Figures 1 and 2. I now describe my attempts to actually understand and recreate these experiments. Seeing how this is a filesystem paper, and reasoned that there should be no kernel version dependency involved. I ran all experiments on a Ubuntu 16.04 (running a 4.15.0-43 kernel) on an x86-64 machine with 16GB RAM and a 1TB SSD. The disk has been partitioned with an ext4 filesystem.
+
+\begin{itemize}
+    \item Impressions is available for download on the ADSL website \cite{Impressions} as a tarball. On trying to compile the code, I ran into many compilation errors. Most seemed to come from the code that was used for Monte-Carlo Simulation, and some inconsistencies in the C++ standard used. I fixed these and then tried to run the code.
+    \item On trying to run the code, I ran into segmentation faults. On closer inspection, it appeared to be coming from a buffer overflow when trying to create the pathname for the file generation. Several hours of debugging later, I realized that this is happening because of uninitialized arrays being used for the pathname generation while creating the files. I fixed this and then was able to do a non-crashing run of the program. 
+    \item Next I tried to create a filesystem to run the experiments mentioned in Figure 1. I was able to demonstrate the effect of caching by following the following steps:
+    \begin{enumerate}
+        \item On a newly rebooted machine, try to find a file that I knew is at some levels deep (6 in this instance). Record the time taken for this.  
+        \item Read the filesystem contents by running \texttt{find /} on the generated image. This caches the filesystem metadata.
+        \item Now repeat the search for the same file as in step 1. This should be faster.
+    \end{enumerate}
+    \item I also tried to recreate the effect of varying fragmentation in the on-disk layout, but I could not create a flat tree or a deep tree layout. I later learned that this was because they can only support this on an ext3/ext2 filesystem, and I was using ext4.
+\end{itemize}
+I spent far too much time in trying to get the fragmentation layout working, but I did not succeed. \emph{Lesson learned: read the fine print. Also, do the bigger and more important experiments first.}\\\\
+Next, I tried to reproduce the results in Figure 2. To do this, I used the stock inputfile they provided with the tarball and created the filesystem image. All experiments were done using the \texttt{find} utility. Again, there was not enough clarity in what the authors meant by Files by size(Fig 2b) versus Files by Containing Bytes(Fig 2d). In the absence of any kind of information, \footnote{It might be common knowledge in the filesystem research community, but it seemed opaque to me.}, I assumed the following:
+\begin{enumerate}
+    \item File by Size means the distribution of the files in the filesystem as measured in block size on disk. To find this I planned to use the \texttt{du} utility.
+    \item File by Containing Bytes refers to the actual number of bytes of content in a file. To measure this I planned to use the \texttt{ls -lh} utility.
+    \item I did not get as far as finding the file distribution by extension types, but I planned to treat \texttt{.so} and \texttt{.a} files as  equivalent to \texttt{dlls} and executable binaries (files with execute permissions in ls output) as equivalent to \texttt{exe} files. 
+\end{enumerate}
+
+The experiments for measuring this were quite straightforward: I ran find repeatedly on the root location of the image while controlling the maxdepth parameter and logging the file sizes (on disk and byte size), the number of subdirectories of each directory, and the number of directories at each level.
