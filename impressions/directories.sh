@@ -1,6 +1,6 @@
 #!/bin/bash
 #HOME=/big_disk/puneet/impress_home/
-HOME=/home/puneet/
+HOME=/home/h
 #Fig a : directories by namespace depth
 for i in `seq 1 16`;
 do

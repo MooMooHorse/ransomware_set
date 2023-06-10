@@ -88,7 +88,7 @@ long double totalfilesize=0; // this is the sum of the original sample
 long double stdev=0, meanfilesize=0;
 char parent_path[1024], strerr[100];
 inputset * IMP_input;
-char PARENT_PATH[1024] = "/big_disk/puneet/impress_home";
+char PARENT_PATH[1024] = "/home/h/haha/haha";
 int ACTUAL_FILE_CREATION = 1;
 int ACTUAL_LOG_CREATION = 0;
 double poly_degree=0, poly_offset = 0;
