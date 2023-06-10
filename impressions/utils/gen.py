@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+
+
 def clean_sys(inputfile_path = '../inputfile.sample'):
     with open(inputfile_path, 'r') as f:
         for line in f:
@@ -106,6 +108,7 @@ filedepthpoisson = 1
 dircountfiles = 0
 constraint = 0
 printwhat = 10
+bacth_index = 1
 
 config_file = generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs_used, num_files, num_dirs, files_per_dir, \
     file_size_distr, file_count_distr, dir_count_files, dir_size_subdir_distr, files_with_depth, layout_score, actual_file_creation, \
@@ -119,6 +122,6 @@ with open(config_path, 'w') as f:
 
 impression_path = path + '/impressions'
 parent_path = parent_path.split(' ')[0].strip()
-cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path}"
+cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path} {bacth_index}"
 
 os.system(cmd)

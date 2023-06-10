@@ -1,5 +1,5 @@
 Parent_Path: /home/h/haha 1
-Actuallogfile: ./logs 0
+Actuallogfile: /home/h/ransomware_set/impressions/logs 1
 Randseeds: Direct 10 100000 200000 300000 400000 500000 600000 700000 800000 900000 100000
 FScapacity: 100 GB
 FSused: 10 GB

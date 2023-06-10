@@ -421,8 +421,16 @@ int main(int argc, char * argv[]) {
     double logn;
     int seed=1;
     int input_scan_err = -1; 
-    
-    /* user specified specification file */
+    int batch_ind = -1;
+    if(argc == 3) {
+        // haor2 ; the last index is the batch index
+        batch_ind = atoi(argv[2]);
+        /* Hold all input parameters */
+        IMP_input = (inputset *) malloc(sizeof(inputset));
+
+        input_scan_err = get_input_specification(argv[1]);
+        print_debug1(1, "Reading spec from %s batch index = %d\n", argv[1], batch_ind);
+    } else /* user specified specification file */ 
     if (argc == 2) {
         if( strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "-help") == 0 || strcmp(argv[1], "help") == 0) {
             print_debug1(1, "Impressions usage: \n impressions <specification file> \n");
@@ -501,7 +509,7 @@ int main(int argc, char * argv[]) {
 
     if(ACTUAL_LOG_CREATION) {
         char logfilename[100];
-        sprintf(logfilename, "%s/log-%d", IMP_input->Actuallogfile, IMP_input->Numfiles);
+        sprintf(logfilename, "%s/log-%d", IMP_input->Actuallogfile, batch_ind);
         if( !(fp_log = fopen(logfilename, "w"))) {
             print_debug1(1, "Cannot create Log file, proceeding without logging\n");
             //exit(-1);
