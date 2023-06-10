@@ -1,8 +1,9 @@
 CC = g++
-CFLAGS = -g -std=c++11 -Wall -pedantic
+CFLAGS = -g 
 #-pg
 LFLAGS = -lm
 CFLAGS += -I./include/
+CFLAGS += -fpermissive
 
 all:	impress
 impress: 	word.o get_spec.o extension.o posix_lib.o montecarlo.o impress.o fragment.o depth.o ssp.o

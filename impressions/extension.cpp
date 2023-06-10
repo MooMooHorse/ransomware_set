@@ -222,9 +222,9 @@ int get_random_ext(char *random_ext) {
 long double make_generic_file(char * filepath, long double size, int depth, FILE * fp_log) {
 
     int header_size=0;
-    char header[1024]="";
-    char ext[3]="", full_filepath[1024]="", helperexec[1024]="";
-    char cmd[1024]="", args[1024]="";
+    char header[1024];
+    char ext[4], full_filepath[1024], helperexec[1024];
+    char cmd[1024], args[1024];
     int ext_number;
     
     __Ntime gettimeofday(&extension_start, NULL);
@@ -257,7 +257,7 @@ long double make_generic_file(char * filepath, long double size, int depth, FILE
     }
 
     if(ext_number)
-        sprintf(full_filepath, "%s.%s", filepath, ext); //extension_array[ext_number]);s
+        sprintf(full_filepath, "%s.%s", filepath, ext); //extension_array[ext_number]);
     else if (ext_number ==0) {
         sprintf(full_filepath, "%s", filepath);
         

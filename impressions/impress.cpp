@@ -88,7 +88,7 @@ long double totalfilesize=0; // this is the sum of the original sample
 long double stdev=0, meanfilesize=0;
 char parent_path[1024], strerr[100];
 inputset * IMP_input;
-char PARENT_PATH[1024] = "/home/h/haha/haha";
+char PARENT_PATH[1024] = "/nitin/beagle/impress_home";
 int ACTUAL_FILE_CREATION = 1;
 int ACTUAL_LOG_CREATION = 0;
 double poly_degree=0, poly_offset = 0;
@@ -104,9 +104,9 @@ int ATTR_NUM_FILES = 0;
 int FILE_TRUNCATOR = 0; // or (ATTR_NUM_DIRS || ATTR_NUM_FILES);
 
 extern dir * Dirs;
-extern list<dir> LD;
-extern list<dir>::iterator li;
-extern list<dir>::iterator ni;
+extern deque<dir> LD;
+extern deque<dir>::iterator li;
+extern deque<dir>::iterator ni;
 extern multimap<int, dir> DirDepthmultimap;
 extern map<int, dir> DirIDmap;
 extern multimap<int, int> Dircountfilesmmap[DEPTH_ENTRIES];
@@ -234,7 +234,6 @@ void init () {
     init_ext_popularity();
     
     print_debug(0, "fragstate : %f\n", IMP_input->Layoutscore);
-    
     if(IMP_input->Layoutscore < 1.0) {
         
         //initialize fragmentation files
@@ -254,15 +253,15 @@ void init () {
         poly_degree  = IMP_input->dircountfilesparams[0];
         poly_offset  = IMP_input->dircountfilesparams[1];
         
-        for (i = 1; i< FILES_PERDIR-1; i++) {
+        for (i = 0; i < FILES_PERDIR-1; i++) {
             //for dir with files > 0
             dircountfiles_prob[i] = (poly_degree-1)*pow(poly_offset,poly_degree-1)*pow((i+poly_offset),-poly_degree); 
             temp_sum+=dircountfiles_prob[i];
         }
         
-        dircountfiles_prob[0]= 0.225;
+        // dircountfiles_prob[0]= 0.225;
         // dircountfiles_prob[0]= 0.0; // for testing only
-        temp_sum+=dircountfiles_prob[0];
+        // temp_sum+=dircountfiles_prob[0];
         total_dfc = (int)(10000*temp_sum);
         
         // last bin is cumulative prob of all files >= FILES_PERDIR-1
@@ -503,8 +502,7 @@ int main(int argc, char * argv[]) {
     if(ACTUAL_LOG_CREATION) {
         char logfilename[100];
         sprintf(logfilename, "%s/log-%d", IMP_input->Actuallogfile, IMP_input->Numfiles);
-        printf("%s",logfilename);
-	if( !(fp_log = fopen(logfilename, "w"))) {
+        if( !(fp_log = fopen(logfilename, "w"))) {
             print_debug1(1, "Cannot create Log file, proceeding without logging\n");
             //exit(-1);
         }
@@ -759,6 +757,9 @@ int main(int argc, char * argv[]) {
                     cur  = DirIDmap.find(0);
                     depth = ((*cur).second).depth+1;
                     ((*cur).second).files++;
+                    if ((*cur).second.path[0] == '\0') {
+                        sprintf((*cur).second.path, "/");
+                    }
                     sprintf(parent_path,"%s%sF%d", PARENT_PATH, ((*cur).second).path, i);
 
                 }
@@ -796,6 +797,9 @@ int main(int argc, char * argv[]) {
                     cur  = DirIDmap.find((*idcit2).second);
                     depth = ((*cur).second).depth+1;
                     ((*cur).second).files++;
+                    if ((*cur).second.path[0] == '\0') {
+                        sprintf((*cur).second.path, "/");
+                    }
                     sprintf(parent_path,"%s%sF%d", PARENT_PATH, ((*cur).second).path, i);
                 }    
             }
@@ -813,6 +817,9 @@ int main(int argc, char * argv[]) {
                 it3 = dirppp.first;
                 advance(it3, (int)data2);
                 ((*it3).second).files++;
+                if ((*it3).second.path[0] == '\0') {
+                    sprintf((*it3).second.path, "/");
+                }
                 sprintf(parent_path,"%s%sF%d", PARENT_PATH, ((*it3).second).path, i);
             }
             
@@ -825,6 +832,9 @@ int main(int argc, char * argv[]) {
             cur  = DirIDmap.find((int)data2);
             depth = ((*cur).second).depth+1;
             ((*cur).second).files++;
+            if ((*cur).second.path[0] == '\0') {
+                sprintf((*cur).second.path, "/");
+            }
             sprintf(parent_path,"%s%sF%d", PARENT_PATH, ((*cur).second).path, i);
         }
         

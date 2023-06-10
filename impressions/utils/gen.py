@@ -1,7 +1,7 @@
 import os
 import shutil
 import sys
-def clean_sys(inputfile_path = '../inputfile'):
+def clean_sys(inputfile_path = '../inputfile.sample'):
     with open(inputfile_path, 'r') as f:
         for line in f:
             if line.startswith('Parent_Path:'):
@@ -17,9 +17,14 @@ def clean_sys(inputfile_path = '../inputfile'):
 def handle_flags():
     for arg in sys.argv[1:]:
         if arg.startswith("--clean"):
+            config_path = arg.split('=')
+            if len(config_path) == 1:
+                config_path = 'inputfile.sample'
+            else:
+                config_path = config_path[1].strip()
             # get the path of current file
             path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-            clean_sys(path + '/inputfile')
+            clean_sys(path + '/' + config_path)
             sys.exit(0)
             
 def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs_used, num_files, num_dirs, \
@@ -53,9 +58,9 @@ def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs
     config += "Dircountfiles {}\n".format(dircountfiles)
     config += "Constraint {}\n".format(constraint)
     config += "Printwhat: {}\n".format(printwhat)
-    config += "ext 0\n"
+    config += "ext 1\n"
     config += "sizebin 0\n"
-    config += "size 0\n"
+    config += "size 1\n"
     config += "initial 0\n"
     config += "final 1\n"
     config += "depth 0\n"
@@ -68,8 +73,8 @@ def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs
     return config
 handle_flags()
 
-parent_path = "/home/h/haha/haha 1"
-actual_logfile = "./logs 1"
+parent_path = "/home/h/haha 1"
+actual_logfile = "./logs 0"
 randseeds = [10, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 100000]
 fs_capacity = "100 GB"
 fs_used = "10 GB"
@@ -106,7 +111,9 @@ config_path = path + '/config'
 # dump the string to config file
 with open(config_path, 'w') as f:
     f.write(config_file)
-    
-cmd = "cd .. && ./impressions config"
+
+impression_path = path + '/impressions'
+parent_path = parent_path.split(' ')[0].strip()
+cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path}"
 
 os.system(cmd)

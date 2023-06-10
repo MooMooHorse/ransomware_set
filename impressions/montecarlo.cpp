@@ -30,9 +30,9 @@ GNU General Public License in file named COPYING
 
 int max_dir_depth;
 
-list<dir> LD;
-list<dir>::iterator li;
-list<dir>::iterator ni;
+deque<dir> LD;
+deque<dir>::iterator li;
+deque<dir>::iterator ni;
 
 // multimap for Dirs with depth
 struct ltint {
@@ -247,7 +247,7 @@ int montecarlo(int numdirs) {
     srand(deseeder());
     int root=0; 
     long i=0, j=0;
-    char parent_path[1024], strerr[100]; //uninitialized
+    char parent_path[1024], strerr[100];
     int my_parent=0, parent_depth =0;
     for (i =0;i<numdirs; i++)
         Dirs[i].setid(i);
@@ -275,6 +275,8 @@ int montecarlo(int numdirs) {
         #endif
 
         ni=LD.begin();
+        // If the while loop is too slow, use this instead
+        // ni += token / 3;
         token_uptil_now+= (*ni).subdirs+2;
         while(token_uptil_now < token) {
             ni++;
@@ -320,7 +322,7 @@ int montecarlo(int numdirs) {
         li = LD.begin();
         li++; // skip the root, already created
         for(; li != LD.end(); li++) {
-            sprintf( parent_path,"%s/%s", PARENT_PATH, (*li).path);
+            sprintf( parent_path,"%s%s", PARENT_PATH, (*li).path);
             if((local_err = pos_mkdir(parent_path, mode)) <0) {
                 strerror_r(errno, strerr, 100);
                 print_debug(1, "Error: Unable to mkdir (pathname = %s %d\n", parent_path, errno);

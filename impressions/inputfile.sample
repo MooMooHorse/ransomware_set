@@ -1,12 +1,12 @@
-Parent_Path: /home/h/haha/haha 1
-Actuallogfile: ./logs 1
+Parent_Path: ./impress_home 1
+Actuallogfile: ./logs 0
 Randseeds: Direct 10 100000 200000 300000 400000 500000 600000 700000 800000 900000 100000
 FScapacity: 100 GB
-FSused: 10 GB
+FSused: 45 GB
 Numfiles: NO K
 Numdirs: NO K
 Filesperdir: 10.2 N
-FilesizeDistr: Direct 3 99994 29 0.91
+FilesizeDistr: Direct 3 99994 29 0.91 
 FilecountDistr: Direct 2 9.48 2.45663283
 Dircountfiles: Direct 2 2 2.36
 DirsizesubdirDistr: Indir DirsizesubdirDistr.txt
@@ -36,3 +36,5 @@ subdirs 0
 dircountfiles 0
 constraint 0
 SpecialDirBias
+
+######### REAL SPEC ENDS ######################
