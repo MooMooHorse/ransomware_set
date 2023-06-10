@@ -1,6 +1,8 @@
 import os
 import shutil
 import sys
+import numpy as np
+from scipy.interpolate import interp1d
 
 
 def handle_flags():
@@ -45,28 +47,94 @@ def generate_graphs(log_file_path, output_dir_path, index):
         depth = int(parts[3])
         data.append((ext_name, ext_num, size, depth))
 
-    # generate size distribution graph (log scale) using stem plot
-    sizes = [d[2] for d in data]
-    plt.stem(sizes)
+    # generate size distribution graph (log scale) using plot
+    # x axis is size in log scale, y axis is count
+    # We plot it smoothly without using histogram
+    sizes = np.array([d[2] for d in data])
+    
+    # Define the size intervals as powers of 2
+    size_intervals = [2**k for k in range(0, int(np.log2(max(sizes))) + 1)]
+
+    # Calculate the counts for each size interval
+    counts = []
+    prev_size = 0
+    for size in size_intervals:
+        count = np.sum((sizes > prev_size) & (sizes <= size))
+        counts.append(count)
+        prev_size = size
+
+    # Create the plot
+    plt.figure(figsize=(8, 6))
+    plt.plot(size_intervals, counts, marker='o', linestyle='-')
+
+    plt.xscale('log')  # Set logarithmic scale on the x-axis
+
+
+    # Set the custom tick locations and labels
+    tick_locations = [8, 10**3, 10**4, 10**5, 10**6, 10**7, 10**8, 10**9, 10**10, 10**11]
+    tick_labels = ['8 Bytes', '1KB', '10KB' ,'100KB','1 MB', '10 MB', '100 MB' , '1 GB', '10 GB', '100 GB']
+    
+    # check the maximum size is less then any of the tick locations, if so, remove the last tick location
+    for i in range(len(tick_locations)):
+        if tick_locations[i] > 2 * max(sizes):
+            tick_locations = tick_locations[:i]
+            tick_labels = tick_labels[:i]
+            break
+    
+    # Set the custom tick locations and labels on the x-axis
+    ax = plt.gca()
+    ax.set_xticks(tick_locations)
+    ax.set_xticklabels(tick_labels)
+    
     plt.xlabel('File Size (log scale)')
     plt.ylabel('Count')
     plt.title('Size Distribution')
-    plt.xscale('log')
     plt.savefig(os.path.join(output_dir_path, f'size_distribution_{index}.png'))
     plt.clf()
     print(f"Generated size_distribution_{index}.png")
-
-    # generate file extension distribution graph
-    ext_names = [d[0] for d in data]
-    plt.hist(ext_names, bins=50)
-    plt.xlabel('File Extension')
-    plt.ylabel('Count')
+    
+    extensions = [
+        "NUL",
+        "TXT",
+        "JPG",
+        "EXE",
+        "CPP",
+        "HTM",
+        "H",
+        "DLL",
+        "GIF",
+        "PDB",
+        "PST",
+        "PCH",
+        "MP3",
+        "LIB",
+        "WMA",
+        "VHD",
+        "PDF",
+        "MPG",
+        "OTHER"  # all files falling in the tail
+    ]
+    ext_names = [extensions[d[1]] for d in data]
+    print(len(set(ext_names)))
+    ext_counts = {}
+    for ext in ext_names:
+        if ext in ext_counts:
+            ext_counts[ext] += 1
+        else:
+            ext_counts[ext] = 1
+    sorted_ext_counts = sorted(ext_counts.items(), key=lambda x: x[1], reverse=True)
+    ext_names = [x[0] for x in sorted_ext_counts]
+    ext_counts = [x[1] for x in sorted_ext_counts]
+    colors = plt.cm.Set3([i/float(len(ext_names)) for i in range(len(ext_names))])
+    plt.barh(range(len(ext_names)), ext_counts, color=colors)
+    plt.yticks(range(len(ext_names)), ext_names)
+    plt.xlabel('Count')
     plt.title('File Extension Distribution')
     plt.savefig(os.path.join(output_dir_path, f'extension_distribution_{index}.png'))
     plt.clf()
     print(f"Generated extension_distribution_{index}.png")
 
-    # generate depth distribution graph
+    # generate depth distribution graph using histogram
     depths = [d[3] for d in data]
     plt.hist(depths, bins=50)
     plt.xlabel('File Depth')
@@ -75,6 +143,8 @@ def generate_graphs(log_file_path, output_dir_path, index):
     plt.savefig(os.path.join(output_dir_path, f'depth_distribution_{index}.png'))
     plt.clf()
     print(f"Generated depth_distribution_{index}.png")
+    
+    
 
 handle_flags()
 
