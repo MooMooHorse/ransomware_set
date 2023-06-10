@@ -6,12 +6,11 @@ def clean_sys(inputfile_path = '../inputfile.sample'):
         for line in f:
             if line.startswith('Parent_Path:'):
                 path = line.split(':')[1].strip().split(' ')[0].strip()
-                parent = os.path.dirname(path)
                 # check if the parent path exists
-                if os.path.exists(parent):
-                    shutil.rmtree(parent)
+                if os.path.exists(path):
+                    shutil.rmtree(path)
                 else:
-                    print('Parent path does not exist: {}'.format(parent))
+                    print('Parent path does not exist: {}'.format(path))
                 break
 
 def handle_flags():
@@ -58,9 +57,9 @@ def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs
     config += "Dircountfiles {}\n".format(dircountfiles)
     config += "Constraint {}\n".format(constraint)
     config += "Printwhat: {}\n".format(printwhat)
-    config += "ext 1\n"
-    config += "sizebin 0\n"
-    config += "size 1\n"
+    config += "ext 0\n"
+    config += "sizebin 1\n"
+    config += "size 0\n"
     config += "initial 0\n"
     config += "final 1\n"
     config += "depth 0\n"
@@ -73,8 +72,15 @@ def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs
     return config
 handle_flags()
 
+path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+config_path = path + '/config'
+
 parent_path = "/home/h/haha 1"
-actual_logfile = "./logs 0"
+actual_logfile = f"{path}/logs" # log directory
+if not os.path.exists(actual_logfile):
+    os.mkdir(actual_logfile)
+actual_logfile = actual_logfile + " 1"
+    
 randseeds = [10, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 100000]
 fs_capacity = "100 GB"
 fs_used = "10 GB"
@@ -105,8 +111,7 @@ config_file = generate_config_file(parent_path, actual_logfile, randseeds, fs_ca
     file_size_distr, file_count_distr, dir_count_files, dir_size_subdir_distr, files_with_depth, layout_score, actual_file_creation, \
         special_flags, flat, deep, ext, wordfreq, large2small, small2large, depthwithcare, filedepthpoisson, dircountfiles, constraint, printwhat)
 
-path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-config_path = path + '/config'
+
 
 # dump the string to config file
 with open(config_path, 'w') as f:
