@@ -44,17 +44,20 @@ BOOT_CONFIG = {
 }
 
 
-tar_sys_info_path = f"{framework_dir}/tar_sys_info"
+tar_sys_info_path = os.path.join(framework_dir, "tar_sys_info")
 tar_sys_dump_path = os.path.join(tar_sys_info_path, "tar_sys_dump")
+tar_sys_path = os.path.join(framework_dir, "tar_sys")
+tar_sys_injected_path = os.path.join(framework_dir, "injected")
+backup_dir = os.path.join(framework_dir, "backup_dir")
 
 # A set of paths used in the framework
 PATHS = {
-    "framework_dir": "rans_test",
+    "framework_dir": framework_dir,
     "tar_sys_info_path": tar_sys_info_path,
     "duplicate_dir": f"{framework_dir}/duplicates",
-    "tar_sys_path": f"{framework_dir}/tar_sys",
-    "rans_path": f"{framework_dir}/ransomware",
-    "backup_dir_path": f"{framework_dir}/backup_dir",
+    "tar_sys_path": tar_sys_path,
+    "injected_path": tar_sys_injected_path,
+    "backup_dir_path": backup_dir,
     "tar_sys_dump_path": tar_sys_dump_path,
 }
 # A set of parameters for the target system

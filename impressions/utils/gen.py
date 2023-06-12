@@ -70,7 +70,9 @@ def handle_flags():
     python3 impressions/utils/gen.py --clean=config/config_2
     which removes the 2nd config file in the config directory (all related redundant files, logs, stat, and tar_sys)
     Another example would be :
-    rm -rf /home/h/rans_test && mkdir /home/h/rans_test && mkdir /home/h/rans_test/tar_sys && python3 /home/h/ransomware_set/impressions/utils/gen.py -path=/home/h/rans_test/tar_sys -batch=2 -tused=10 -usedunit=GB -mu=2 -fscore=1.0
+    rm -rf /home/h/rans_test && mkdir /home/h/rans_test && mkdir /home/h/rans_test/tar_sys && python3 /home/h/ransomware_set/impressions/utils/gen.py -path=/home/h/rans_test/tar_sys -batch=2 -tused=10 -usedunit=GB -mu=4 -fscore=1.0
+    whould generate a target system whose size distribution has peak at small files
+    rm -rf /home/h/rans_test && mkdir /home/h/rans_test && mkdir /home/h/rans_test/tar_sys && python3 /home/h/ransomware_set/impressions/utils/gen.py -path=/home/h/rans_test/tar_sys -batch=2 -tused=100 -usedunit=GB -mu=17 -fscore=1.0
     """
     global parent_path, bacth_index, fs_used, file_count_distr, layout_score
     for arg in sys.argv[1:]:

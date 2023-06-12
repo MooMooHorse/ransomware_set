@@ -73,6 +73,7 @@ def prepare_tar_sys(tar_sys_path, totsize, mu, fragscore):
     
     
     
+    
 import subprocess
 
 def prepare_backup_dir(tar_sys_path, backup_dir_path):
@@ -122,8 +123,8 @@ median_length_of_files = TAR_SYS_PARAMS["median_length_of_files"]
 file_type_set = TAR_SYS_PARAMS["file_type_set"]
 
 
-totoalSysSize = ['10 MB', '1 GB', '100 GB']
-mu = ['2', '9.28', '14'] # to be tuned
+totoalSysSize = ['100 MB', '7 GB']
+mu = ['4', '9.28', '17'] # to be tuned
 fragScore = ['0', '0.5', '1']
 
 start = time.time()
@@ -134,20 +135,20 @@ for _totsize in totoalSysSize:
             prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore)
 # prepare_backup_dir(tar_sys_path, backup_dir_path)
 
-print(f"finish preparing target system using {time.time() - start} seconds")
+# print(f"finish preparing target system using {time.time() - start} seconds")
 
 
 
-# Display backup paths and confirm user input
-print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path = {rans_path}, backup_dir_path = {backup_dir_path} (y/n)")
-input_val = input()
-if input_val != "y":
-    sys.exit(0)
+# # Display backup paths and confirm user input
+# print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path = {rans_path}, backup_dir_path = {backup_dir_path} (y/n)")
+# input_val = input()
+# if input_val != "y":
+#     sys.exit(0)
 
-blktrace_dir = BOOT_CONFIG["blktrace_dir"]
-backup_blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
-preprocess_tar_sys(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
-# preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
+# blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+# backup_blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
+# preprocess_tar_sys(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
+# # preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
 
-os.system("./core")
+# os.system("./core")
 
