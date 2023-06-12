@@ -13,7 +13,10 @@ def clean_sys(inputfile_path = '../inputfile.sample'):
                     shutil.rmtree(path)
                 else:
                     print('Parent path does not exist: {}'.format(path))
-                break
+            elif line.startswith('Actuallogfile:'):
+                path = line.split(':')[1].strip().split(' ')[0].strip()
+                if os.path.exists(path):
+                    shutil.rmtree(path)
 
 def handle_flags():
     for arg in sys.argv[1:]:
@@ -26,7 +29,20 @@ def handle_flags():
             # get the path of current file
             path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
             clean_sys(path + '/' + config_path)
+            # rm the config file
+            if os.path.exists(path + '/' + config_path):
+                os.remove(path + '/' + config_path)
             sys.exit(0)
+        elif arg.startswith("-path"):
+            parent_path = arg.split('=')[1].strip()
+        elif arg.startswith('-batch'):
+            bacth_index = arg.split('=')[1].strip()
+        elif arg.startswith('-used'):
+            fs_used = arg.split('=')[1].strip()
+        elif arg.startswith('-mu'):
+            file_count_distr = "Direct 2 " + arg.split('=')[1].strip() + " 2.45663283"
+        elif arg.startswith('-fscore'):
+            layout_score = arg.split('=')[1].strip()
             
 def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs_used, num_files, num_dirs, \
     files_per_dir, file_size_distr, file_count_distr, dir_count_files, dir_size_subdir_distr, \
@@ -72,10 +88,14 @@ def generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs
     config += "SpecialDirBias\n"
 
     return config
-handle_flags()
 
+bacth_index = 1
 path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-config_path = path + '/config'
+stat_dir = os.path.join(path, 'stat')
+config_dir = os.path.join(path, 'config')
+if not os.path.exists(config_dir):
+    os.mkdir(config_dir)
+config_path = config_dir + f'/config_{bacth_index}'
 
 parent_path = "/home/h/haha 1"
 actual_logfile = f"{path}/logs" # log directory
@@ -84,7 +104,7 @@ if not os.path.exists(actual_logfile):
 actual_logfile = actual_logfile + " 1"
     
 randseeds = [10, 100000, 200000, 300000, 400000, 500000, 600000, 700000, 800000, 900000, 100000]
-fs_capacity = "100 GB"
+fs_capacity = "200 GB"
 fs_used = "10 GB"
 num_files = "NO K"
 num_dirs = "NO K"
@@ -108,7 +128,8 @@ filedepthpoisson = 1
 dircountfiles = 0
 constraint = 0
 printwhat = 10
-bacth_index = 1
+
+handle_flags()
 
 config_file = generate_config_file(parent_path, actual_logfile, randseeds, fs_capacity, fs_used, num_files, num_dirs, files_per_dir, \
     file_size_distr, file_count_distr, dir_count_files, dir_size_subdir_distr, files_with_depth, layout_score, actual_file_creation, \
@@ -122,6 +143,10 @@ with open(config_path, 'w') as f:
 
 impression_path = path + '/impressions'
 parent_path = parent_path.split(' ')[0].strip()
-cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path} {bacth_index}"
+# stat dir 
+if not os.path.exists(stat_dir):
+    os.mkdir(stat_dir)
+    
+cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path} {bacth_index} > {stat_dir}/stat_{bacth_index}"
 
 os.system(cmd)

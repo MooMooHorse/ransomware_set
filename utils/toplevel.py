@@ -17,10 +17,10 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-from access import clean_up_groups_users
+# from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG
 from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, BOOT_CONFIG
-from preprocess import preprocess_tar_sys, preprocess_backup_dir
+from preprocess import preprocess_tar_sys
 
 
 dev_list = MOUNT_CONFIG['dev_list']
@@ -50,22 +50,28 @@ def mount_dev(dev_path, mount_path, cfs_type):
     dev_list.remove(dev_path)
     dev_used.append(dev_path)
     
-def prepare_tar_sys(tar_sys_path):
+def prepare_tar_sys(tar_sys_path, totsize, mu, fragscore):
+    """re-construct the target system. Erase the original target system and create a new one.
+
+    Args:
+        tar_sys_path (string): path to the target system
+        totsize (string): total size of the target system (approx.)
+        mu (string): average peak of size distribution
+        fragscore (string): fragmentation score
+    """
     
-    dup_tar_sys_path = f"_{tar_sys_path}"
-
-    # Check if target system exists, if not, ask for user input
-    if not os.path.isdir(dup_tar_sys_path):
-        os.system(f"python3 utils/gen_tar_sys.py {number_of_files} {median_length_of_files} {file_type_set} {dup_tar_sys_path} {framework_dir}")
-
+    injectedSize = ['1%', '20%', '100%']
+    injectedLimit = ['100 MB']
+    
     mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 
     # change the owner of the root_path to the current user
     os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
-
-    # move all files in dup_tar_sys_path to tar_sys_path without using wildcard because the number of files is too large
-    for file in os.listdir(dup_tar_sys_path):
-        shutil.move(f"{dup_tar_sys_path}/{file}", tar_sys_path)
+    
+    # remove all files in the target system
+    os.system(f"sudo rm -rf {tar_sys_path}/*") # ALARM, high overhead, be sure to do this only several times (in current case 27 times, only 9 of which are done to 100GB system)
+    
+    
     
 import subprocess
 
@@ -77,15 +83,8 @@ def prepare_backup_dir(tar_sys_path, backup_dir_path):
 
 def handle_flags(tar_sys_path, backup_dir_path):
     for arg in sys.argv[1:]:
-        if arg.startswith("-t=") or arg.startswith("--tar_sys_path="):
-            tar_sys_path = arg.split("=", 1)[1]
-        elif arg.startswith("-r=") or arg.startswith("--rans_path="):
-            rans_path = arg.split("=", 1)[1]
-        elif arg.startswith("-b=") or arg.startswith("--backup_dir_path="):
-            backup_dir_path = arg.split("=", 1)[1]
-        elif arg.startswith("--clean"):
-            # remove rams_test directory with sudo and exit
-            clean_up_groups_users(f"{framework_dir}") # first remove all groups and users created by gen_tar_sys.py
+        if arg.startswith("--clean"):
+            # clean_up_groups_users(f"{framework_dir}") # first remove all groups and users created by gen_tar_sys.py
             # os.system(f"sudo umount {tar_sys_path} && sudo umount {backup_dir_path} && sudo rm -rf rans_test")
             os.system(f"sudo umount {tar_sys_path} && sudo rm -rf rans_test")
             sys.exit(0)
@@ -116,22 +115,27 @@ if not os.path.isdir(f"{framework_dir}"):
 if not os.path.isdir(tar_sys_info_path):
     os.mkdir(tar_sys_info_path)
 
+handle_flags(tar_sys_path, backup_dir_path)
 
 number_of_files = TAR_SYS_PARAMS["number_of_files"]
 median_length_of_files = TAR_SYS_PARAMS["median_length_of_files"]
 file_type_set = TAR_SYS_PARAMS["file_type_set"]
 
-handle_flags(tar_sys_path, backup_dir_path)
+
+totoalSysSize = ['10 MB', '1 GB', '100 GB']
+mu = ['2', '9.28', '14'] # to be tuned
+fragScore = ['0', '0.5', '1']
 
 start = time.time()
 
-prepare_tar_sys(tar_sys_path)
+for _totsize in totoalSysSize:
+    for _mu in mu:
+        for _fragscore in fragScore: 
+            prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore)
 # prepare_backup_dir(tar_sys_path, backup_dir_path)
 
 print(f"finish preparing target system using {time.time() - start} seconds")
 
-# Run dump_tar_sys_info.py to dump info to corresponding files
-os.system(f"python3 utils/dump_tar_sys_info.py {tar_sys_info_path} {tar_sys_path} {backup_dir_path} {number_of_files} {median_length_of_files} {file_type_set}")
 
 
 # Display backup paths and confirm user input
