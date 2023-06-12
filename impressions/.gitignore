@@ -1,3 +1,5 @@
 *.o
 inputfile
 impressions
+logs
+stat

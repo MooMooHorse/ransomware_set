@@ -60,12 +60,15 @@ def clean_sys(inputfile_path = '../inputfile.sample'):
                 path = line.split(':')[1].strip().split(' ')[0].strip()
                 if os.path.exists(path):
                     shutil.rmtree(path)
-
+    # remove the stat directory
+    stat_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'stat')
+    shutil.rmtree(stat_path)
 def handle_flags():
     """
     Handle the flags passed to the script.
     An example would be :
-    python3 utils/gen.py --clean
+    python3 impressions/utils/gen.py --clean=config/config_2
+    which removes the 2nd config file in the config directory (all related redundant files, logs, stat, and tar_sys)
     Another example would be :
     rm -rf /home/h/rans_test && mkdir /home/h/rans_test && mkdir /home/h/rans_test/tar_sys && python3 /home/h/ransomware_set/impressions/utils/gen.py -path=/home/h/rans_test/tar_sys -batch=2 -tused=10 -usedunit=GB -mu=2 -fscore=1.0
     """
