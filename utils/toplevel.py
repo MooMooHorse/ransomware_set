@@ -3,6 +3,7 @@ import shutil
 import sys
 import time
 
+
 test_id = 1
 
 ENABLE_DEBUG = False
@@ -39,17 +40,33 @@ def mount_dev(dev_path, mount_path, cfs_type):
         os.mkdir(mount_path)
     if cfs_type == FS_EXT4:
         # mkfs.ext4
-        os.system(f"sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 {dev_path} {mount_path}")
+        os.system(f"y | sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 {dev_path} {mount_path}")
     elif cfs_type == FS_NTFS:
-        os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
+        os.system(f"y | sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
     elif cfs_type == FS_F2FS:
-        os.system(f"sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
+        os.system(f"y | sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
     elif cfs_type == FS_EXT2:
-        os.system(f"sudo mkfs.ext2 {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
+        os.system(f"y | sudo mkfs.ext2 {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
         
 
-    dev_list.remove(dev_path)
-    dev_used.append(dev_path)
+    # dev_list.remove(dev_path)
+    # dev_used.append(dev_path)
+    
+def degrade_mu(unit, size, mu):
+    if unit == 'MB':
+        if size <= 20:
+            mu = min(mu, 8)
+        elif size <= 150:
+            mu = min(mu, 12)
+        elif size <= 1000:
+            mu = min(mu, 14)
+    elif unit == 'GB':
+        if size <= 1 :
+            mu = min(mu, 15)
+        elif size <= 2:
+            mu = min(mu, 16)
+            
+    return mu
     
 def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
     """re-construct the target system. Erase the original target system and create a new one.
@@ -74,12 +91,13 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
     injectedRate = ['1%', '20%', '100%']
     injectedLimit = '100 MB' # must be in MB
     
+    mu = degrade_mu(tot_size_unit, tot_size, mu)
+    
     
     mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 
     # change the owner of the root_path to the current user
     os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
-    print(f"sudo rm -rf {tar_sys_path}/*")
     # remove all files in the target system
     os.system(f"sudo rm -rf {tar_sys_path}/*") # ALARM, high overhead, be sure to do this only several times (in current case 27 times, only 9 of which are done to 100GB system)
     
@@ -108,7 +126,9 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         with open(os.path.join(log_dir, test_info_path), 'w') as f:
             f.write(f"test_id : {test_id + BATCH_BASE}\n")
             f.write(f"gen_cmd : python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}\n")
-            
+        # print(log_dir + '!!!!!!!!!!')
+        
+        mu = degrade_mu(inject_size_unit, injected_size, mu)
         # This will make sure that injected system is cleared before generating a new one
         os.system(f"python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}") 
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
@@ -148,7 +168,7 @@ if not os.path.isdir(log_dir_path):
 handle_flags(tar_sys_path, backup_dir_path)
 
 
-totoalSysSize = ['100 MB', '5 GB']
+totoalSysSize = ['100 MB']
 mu = ['4', '9.28', '17'] # to be tuned
 fragScore = ['0', '0.5', '1']
 
@@ -159,7 +179,7 @@ batch_ind = 1
 for _totsize in totoalSysSize:
     for _mu in mu:
         for _fragscore in fragScore: 
-            if batch_ind == 1: # dbg purpose
+            if batch_ind > 8:
                 prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind)
             batch_ind += 1
 

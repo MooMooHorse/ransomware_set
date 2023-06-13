@@ -60,11 +60,11 @@ def add_magic_num_1_2(tar_sys_path):
                                chr(MAGIC_NUM["MAGIC_NUM1_03"]), chr(MAGIC_NUM["MAGIC_NUM1_04"])])
     magic_num_2_str = ''.join([chr(MAGIC_NUM["MAGIC_NUM2_01"]), chr(MAGIC_NUM["MAGIC_NUM2_02"]),
                                  chr(MAGIC_NUM["MAGIC_NUM2_03"]), chr(MAGIC_NUM["MAGIC_NUM2_04"])])
-    print(f"magic_num_1_str: {magic_num_1_str}")
-    print(f"magic_num_2_str: {magic_num_2_str}")
-    big_magic = ((ord(magic_num_1_str[0]) << 24) + (ord(magic_num_1_str[1]) << 16) +
-                 (ord(magic_num_1_str[2]) << 8) + ord(magic_num_1_str[3]))
-    print(f"big_magic: {big_magic}")
+    # print(f"magic_num_1_str: {magic_num_1_str}")
+    # print(f"magic_num_2_str: {magic_num_2_str}")
+    # big_magic = ((ord(magic_num_1_str[0]) << 24) + (ord(magic_num_1_str[1]) << 16) +
+    #              (ord(magic_num_1_str[2]) << 8) + ord(magic_num_1_str[3]))
+    # print(f"big_magic: {big_magic}")
     for root, dirs, files in os.walk(tar_sys_path):
         for file in files:
             os.rename(os.path.join(root, file), os.path.join(root, magic_num_1_str + file + magic_num_2_str))

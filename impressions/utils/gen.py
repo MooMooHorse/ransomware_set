@@ -64,6 +64,9 @@ def clean_sys(inputfile_path):
                         path = line.split(':')[1].strip().split(' ')[0].strip()
                         if os.path.exists(path):
                             shutil.rmtree(path)
+        # remove all config files
+        for config_file in os.listdir(config_dir):
+            os.remove(os.path.join(config_dir, config_file))
     else:
         # for the specified config file
         with open(inputfile_path, 'r') as f:
@@ -81,7 +84,8 @@ def clean_sys(inputfile_path):
                         shutil.rmtree(path)
     # remove the stat directory
     stat_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'stat')
-    shutil.rmtree(stat_path)
+    if os.path.exists(stat_path):
+        shutil.rmtree(stat_path)
 def handle_flags():
     """
     Handle the flags passed to the script.
@@ -183,21 +187,21 @@ def main():
         file_size_distr, file_count_distr, dir_count_files, dir_size_subdir_distr, files_with_depth, layout_score, actual_file_creation, \
             special_flags, flat, deep, ext, wordfreq, large2small, small2large, depthwithcare, filedepthpoisson, dircountfiles, constraint, printwhat)
 
-
+    
     # dump the string to config file
     with open(config_path, 'w') as f:
         f.write(config_file)
-    # print(config_file)
-    # print(config_path)
     
     impression_path = path + '/impressions'
     parent_path = parent_path.split(' ')[0].strip()
     # stat dir 
     if not os.path.exists(stat_dir):
         os.mkdir(stat_dir)
-        
-    cmd = f"rm -rf {parent_path} && mkdir {parent_path} && {impression_path} {config_path} {bacth_index} > {stat_dir}/stat_{bacth_index}"
-
+    if not os.path.exists(parent_path):
+        os.mkdir(parent_path)
+    
+    cmd = f"rm -rf {parent_path}/* && {impression_path} {config_path} {bacth_index} > {stat_dir}/stat_{bacth_index}"
+    
     os.system(cmd)
     
 if __name__ == '__main__':
