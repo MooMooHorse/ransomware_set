@@ -126,7 +126,6 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         with open(os.path.join(log_dir, test_info_path), 'w') as f:
             f.write(f"test_id : {test_id + BATCH_BASE}\n")
             f.write(f"gen_cmd : python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}\n")
-        # print(log_dir + '!!!!!!!!!!')
         
         mu = degrade_mu(inject_size_unit, injected_size, mu)
         # This will make sure that injected system is cleared before generating a new one
@@ -172,31 +171,19 @@ totoalSysSize = ['100 MB']
 mu = ['4', '9.28', '17'] # to be tuned
 fragScore = ['0', '0.5', '1']
 
-start = time.time()
 
 batch_ind = 1
 
+total_time = time.time()
+
 for _totsize in totoalSysSize:
     for _mu in mu:
-        for _fragscore in fragScore: 
-            if batch_ind > 8:
-                prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind)
+        for _fragscore in fragScore:
+            start = time.time()
+            prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind)
+            print(f"finish batch {batch_ind} using {time.time() - start} seconds")
             batch_ind += 1
 
-print(f"finish preparing target system using {time.time() - start} seconds")
 
-
-
-# # Display backup paths and confirm user input
-# print(f"Do you want to continue? with tar_sys_path = {tar_sys_path}, rans_path = {rans_path}, backup_dir_path = {backup_dir_path} (y/n)")
-# input_val = input()
-# if input_val != "y":
-#     sys.exit(0)
-
-# blktrace_dir = BOOT_CONFIG["blktrace_dir"]
-# backup_blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
-# preprocess_tar_sys(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
-# # preprocess_backup_dir(backup_dir_path, backup_blktrace_dir, BOOT_CONFIG["backup_disk"])
-
-# os.system("./core")
+print(f"finish all batches using {time.time() - total_time} seconds")
 

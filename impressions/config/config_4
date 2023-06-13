@@ -1,13 +1,13 @@
-Parent_Path: /home/h/rans_test/tar_sys/injected 1
+Parent_Path: /home/h/rans_test/tar_sys 1
 Actuallogfile: /home/h/ransomware_set/impressions/logs 1
 Randseeds: Direct 10 100000 200000 300000 400000 500000 600000 700000 800000 900000 100000
 FScapacity: 200 GB
-FSused: 1.0 MB
+FSused: 100 MB
 Numfiles: NO K
 Numdirs: NO K
 Filesperdir: 10.2 N
 FilesizeDistr: Direct 3 99994 29 0.91
-FilecountDistr: Direct 2 4.0 2.45663283
+FilecountDistr: Direct 2 9.28 2.45663283
 Dircountfiles: Direct 2 2 2.36
 DirsizesubdirDistr: Indir DirsizesubdirDistr.txt
 Fileswithdepth: Direct 10
