@@ -4,7 +4,13 @@ import sys
 import time
 import json
 
-framework_dir = "rans_test"
+framework_dir = "/home/h/rans_test"
+
+cur_file_path = os.path.dirname(os.path.realpath(__file__))
+
+impression_path = os.path.join(cur_file_path, 'impressions')
+impression_gen_path = os.path.join(os.path.join(impression_path, 'utils'), 'gen.py')
+impression_draw_path = os.path.join(os.path.join(impression_path, 'utils'), 'draw.py')
 
 # a set of chosen file system types
 FS_EXT4 = 0
@@ -16,6 +22,7 @@ cfs_type = FS_EXT4
 
 NORMAL_DISK = 0
 BACKUP_DISK = 1
+LARGE_DISK = 2
 XSMALL_DISK = 3
 
 UTF8 = 0
@@ -33,33 +40,39 @@ MOUNT_CONFIG = {
 }
 
 BOOT_CONFIG = {
-    "blktrace_dir" : "blktrace_dir",
-    "default_disk" : MOUNT_CONFIG['dev_list'][XSMALL_DISK],
-    "default_trace_file_path" : "blktrace_dir/tracefile",
-    "core_dir" : "core_dir",
-    "trace_path" : "blktrace_dir/blkparse_output",
-    "backup_trace_path" : "backup_blktrace_dir/blkparse_output",
-    "backup_blktrace_dir" : "backup_blktrace_dir",
+    "default_disk" : MOUNT_CONFIG['dev_list'][NORMAL_DISK],
     "backup_disk" : MOUNT_CONFIG['dev_list'][BACKUP_DISK],
+    "core_dir" : "core_dir",
 }
 
 
 tar_sys_info_path = os.path.join(framework_dir, "tar_sys_info")
 tar_sys_dump_path = os.path.join(tar_sys_info_path, "tar_sys_dump")
 tar_sys_path = os.path.join(framework_dir, "tar_sys")
-tar_sys_injected_path = os.path.join(framework_dir, "injected")
+tar_sys_injected_path = os.path.join(tar_sys_path, "injected")
 backup_dir = os.path.join(framework_dir, "backup_dir")
+log_dir = os.path.join(framework_dir, "logs")
+
+BATCH_BASE = 10000
 
 # A set of paths used in the framework
 PATHS = {
     "framework_dir": framework_dir,
-    "tar_sys_info_path": tar_sys_info_path,
-    "duplicate_dir": f"{framework_dir}/duplicates",
     "tar_sys_path": tar_sys_path,
     "injected_path": tar_sys_injected_path,
     "backup_dir_path": backup_dir,
     "tar_sys_dump_path": tar_sys_dump_path,
+    "impression_path": impression_path,
+    "impression_gen_path": impression_gen_path,
+    "impression_draw_path": impression_draw_path,
+    "log_dir" : log_dir,
 }
+
+LOG_NAME = {
+    'test_info' : 'test_info.log',
+    'dye_info' : 'dye_info.log',
+}
+
 # A set of parameters for the target system
 TAR_SYS_PARAMS = {
     "number_of_files": 100,
@@ -73,19 +86,11 @@ TAR_SYS_PARAMS = {
 # A set of magic numbers used in the framework
 MAGIC_NUM = {
     # Magic number 1 is for the beginning of the file and directory name
-    # "MAGIC_NUM1_01" : 0xde,
-    # "MAGIC_NUM1_02" : 0xad,
-    # "MAGIC_NUM1_03" : 0xbe,
-    # "MAGIC_NUM1_04" : 0xef,
     "MAGIC_NUM1_01" : 0x42,
     "MAGIC_NUM1_02" : 0x43,
     "MAGIC_NUM1_03" : 0x44,
     "MAGIC_NUM1_04" : 0x45,
     # Magic number 2 is for the end of the file and directory name
-    # "MAGIC_NUM2_01" : 0xca,
-    # "MAGIC_NUM2_02" : 0xfe,
-    # "MAGIC_NUM2_03" : 0xba,
-    # "MAGIC_NUM2_04" : 0x23,
     "MAGIC_NUM2_01" : 0x22,
     "MAGIC_NUM2_02" : 0x23,
     "MAGIC_NUM2_03" : 0x24,
@@ -95,13 +100,6 @@ MAGIC_NUM = {
     'DEBUG_MAGIC' : 'd',
 }
 
-PYTHON_RANS_COMMAND = "python3 utils/cryptosoft/ransomware.py"
-MINI_RANS_COMMAND = "./mini"
-
-
-RANS_OPTIONS = {
-    "cmd" : PYTHON_RANS_COMMAND,
-}
 
 # ANSI escape sequences for different colors
 colors = {
@@ -127,8 +125,6 @@ def print_yellow(msg):
 
 def main():
     args = []
-    default_trace_file_path = BOOT_CONFIG["trace_path"]
-    backup_trace_file_path = BOOT_CONFIG["backup_trace_path"]
     default_disk = BOOT_CONFIG["default_disk"]
     backup_disk = BOOT_CONFIG["backup_disk"]
     core_dir = BOOT_CONFIG["core_dir"]
@@ -138,9 +134,8 @@ def main():
         (MAGIC_NUM["MAGIC_NUM2_03"] << 8) + (MAGIC_NUM["MAGIC_NUM2_04"]))
     magic3 = MAGIC_NUM["MAGIC_NUM3"]
     for arg in sys.argv[1:]:
-        if arg.startswith("-tfp"): # dump default_trace_file_path
-            args.append(f"{default_trace_file_path}")
-        elif arg.startswith("-dd"): # dump default_disk
+       
+        if arg.startswith("-dd"): # dump default_disk
             args.append(f"{default_disk}")
         elif arg.startswith("-cd"): # dump core_dir
             args.append(f"{core_dir}")
@@ -152,8 +147,6 @@ def main():
             args.append(f"{PATHS['tar_sys_dump_path']}")
         elif arg.startswith("-en"): # encoding rule
             args.append(f"{encoding_rule}")
-        elif arg.startswith("-bkuptfp"): # backup trace file path
-            args.append(backup_trace_file_path)
         elif arg.startswith("-bkupdd"): # backup disk
             args.append(backup_disk)
         else:

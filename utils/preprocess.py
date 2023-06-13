@@ -25,23 +25,33 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-from config import BOOT_CONFIG, MAGIC_NUM, PATHS, RANS_OPTIONS
+from config import BOOT_CONFIG, MAGIC_NUM, PATHS, LOG_NAME
 from config import print_red
 
-def add_magic_num_1_3(tar_sys_path):
+def add_magic_num_3(tar_sys_path, sync = False):
     """
     Add magic number 3 to replace all the contents of the file
+    Reeturn : the number of files that have been synced
     """
+    synced_num = 0
+    processed_files = 0
+    magic_3 = MAGIC_NUM["MAGIC_NUM3"]
     for root, dirs, files in os.walk(tar_sys_path):
         for file in files:
-            data = None
-            with open(os.path.join(root, file), "rb") as f:
-                data = f.read()
-            with open(os.path.join(root, file), "wb") as f:
-                for byte in data:
-                    f.write(bytes([MAGIC_NUM["MAGIC_NUM3"]]))
+            # get length of the file
+            length = os.path.getsize(os.path.join(root, file))
+            with open(os.path.join(root, file), "r+b") as f:
+                # write length bytes of magic number 3
+                f.write(bytes([magic_3]) * length)
+                # fsync the file if sync is enabled
+                if sync:
+                    os.fsync(f.fileno())
+                    synced_num += 1
+                processed_files += 1
+                    
+    return synced_num, processed_files
 
-def add_magic_num_2(tar_sys_path):
+def add_magic_num_1_2(tar_sys_path):
     """
     Add magic number 1 at the beginning of the file name and directory name
     Add magic number 2 at the end of the file name and directory name
@@ -121,8 +131,11 @@ def files_sync(tar_sys_path):
     Sync all the files in target system to disk
     Refer to https://stackoverflow.com/questions/15983272/does-python-have-sync
     """
-    print("start syncing files to disk...")
-    os.system("sudo sync")
+    # iterate through all the files in the target system, do fsync for each file
+    for root, dirs, files in os.walk(tar_sys_path):
+        for file in files:
+            with open(os.path.join(root, file), "r") as f:
+                os.fsync(f.fileno())
     # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
 
 def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
@@ -214,20 +227,28 @@ def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     """
     Add magic number to the target system
     """
-    files_sync(tar_sys_path)
-    launch_blktrace(blktrace_dir, device)
-    add_magic_num_1_3(tar_sys_path)
-    add_magic_num_2(tar_sys_path)
-    inject_debug_file(tar_sys_path)
-    files_sync(tar_sys_path)
-    dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
+    dye_info_path = LOG_NAME['dye_info']
+    # files_sync(tar_sys_path)
+    # launch_blktrace(blktrace_dir, device)
+    add_magic_num_1_2(tar_sys_path)
+    synced_files, processed_files = add_magic_num_3(tar_sys_path, sync = True)
+    with open(dye_info_path, "w") as f:
+        f.write(f"dye path : {tar_sys_path}\n")
+        f.write(f"Synced files: {synced_files}\n")
+        f.write(f"Processed files: {processed_files}\n")
+    # files_sync(tar_sys_path)
+    # inject_debug_file(tar_sys_path)
+    # dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
     # parse_trace_file(blktrace_dir)
     
 def preprocess_backup_dir(tar_sys_path, blktrace_dir, device):
+    """legacy code, abandoned
+    """
+    return
     files_sync(tar_sys_path)
     launch_blktrace(blktrace_dir, device)
-    add_magic_num_1_3(tar_sys_path)
-    add_magic_num_2(tar_sys_path)
+    add_magic_num_3(tar_sys_path)
+    add_magic_num_1_2(tar_sys_path)
     files_sync(tar_sys_path)
     dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
 
@@ -236,25 +257,25 @@ def _run_ransomware(blktrace_dir):
     Ransomware should be an executable file in the ransomware directory.
     It will only encrypte the files in the target system.
     """
-    import subprocess
-    cmd = RANS_OPTIONS["cmd"]
-    print(f"Running ransomware... with command {cmd}")
-    # current dir
-    cur_dir = os.getcwd()
-    print(f"Current dir is {cur_dir}")
+    # import subprocess
+    # cmd = RANS_OPTIONS["cmd"]
+    # print(f"Running ransomware... with command {cmd}")
+    # # current dir
+    # cur_dir = os.getcwd()
+    # print(f"Current dir is {cur_dir}")
     
-    rans_proc = subprocess.Popen(cmd.split(), cwd=cur_dir)
-    # Launch strace with the ransomware command as a child process
-    rans_pid = rans_proc.pid
-    dbg_fname = f"{blktrace_dir}/strace.log"
-    strace_cmd = ["sudo","strace", "-o", dbg_fname, "-p", f"{rans_pid}"]
-    strace_proc = subprocess.Popen(strace_cmd)
-    # Wait for the ransomware process to finish and obtain its exit status
-    exit_status = rans_proc.wait()
-    # Print the exit status
-    print(f"Ransomware process exited with status {exit_status}")
-    # Terminate the strace process
-    subprocess.run(["sudo", "pkill", "strace"])
+    # rans_proc = subprocess.Popen(cmd.split(), cwd=cur_dir)
+    # # Launch strace with the ransomware command as a child process
+    # rans_pid = rans_proc.pid
+    # dbg_fname = f"{blktrace_dir}/strace.log"
+    # strace_cmd = ["sudo","strace", "-o", dbg_fname, "-p", f"{rans_pid}"]
+    # strace_proc = subprocess.Popen(strace_cmd)
+    # # Wait for the ransomware process to finish and obtain its exit status
+    # exit_status = rans_proc.wait()
+    # # Print the exit status
+    # print(f"Ransomware process exited with status {exit_status}")
+    # # Terminate the strace process
+    # subprocess.run(["sudo", "pkill", "strace"])
 
 def run_ransomware(tar_sys_path, blktrace_dir, device):
     """

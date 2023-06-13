@@ -46,20 +46,39 @@ printwhat = 10
 
 
 
-def clean_sys(inputfile_path = '../inputfile.sample'):
-    with open(inputfile_path, 'r') as f:
-        for line in f:
-            if line.startswith('Parent_Path:'):
-                path = line.split(':')[1].strip().split(' ')[0].strip()
-                # check if the parent path exists
-                if os.path.exists(path):
-                    shutil.rmtree(path)
-                else:
-                    print('Parent path does not exist: {}'.format(path))
-            elif line.startswith('Actuallogfile:'):
-                path = line.split(':')[1].strip().split(' ')[0].strip()
-                if os.path.exists(path):
-                    shutil.rmtree(path)
+def clean_sys(inputfile_path):
+    global config_dir
+    if inputfile_path is None:
+        # for all config files
+        for config_file in os.listdir(config_dir):
+            with open(os.path.join(config_dir, config_file), 'r') as f:
+                for line in f:
+                    if line.startswith('Parent_Path:'):
+                        path = line.split(':')[1].strip().split(' ')[0].strip()
+                        # check if the parent path exists
+                        if os.path.exists(path):
+                            shutil.rmtree(path)
+                        else:
+                            print('Parent path does not exist: {}'.format(path))
+                    elif line.startswith('Actuallogfile:'):
+                        path = line.split(':')[1].strip().split(' ')[0].strip()
+                        if os.path.exists(path):
+                            shutil.rmtree(path)
+    else:
+        # for the specified config file
+        with open(inputfile_path, 'r') as f:
+            for line in f:
+                if line.startswith('Parent_Path:'):
+                    path = line.split(':')[1].strip().split(' ')[0].strip()
+                    # check if the parent path exists
+                    if os.path.exists(path):
+                        shutil.rmtree(path)
+                    else:
+                        print('Parent path does not exist: {}'.format(path))
+                elif line.startswith('Actuallogfile:'):
+                    path = line.split(':')[1].strip().split(' ')[0].strip()
+                    if os.path.exists(path):
+                        shutil.rmtree(path)
     # remove the stat directory
     stat_path = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'stat')
     shutil.rmtree(stat_path)
@@ -67,7 +86,7 @@ def handle_flags():
     """
     Handle the flags passed to the script.
     An example would be :
-    python3 impressions/utils/gen.py --clean=config/config_2
+    python3 impressions/utils/gen.py --clean[=config/config_2]
     which removes the 2nd config file in the config directory (all related redundant files, logs, stat, and tar_sys)
     Another example would be :
     rm -rf /home/h/rans_test && mkdir /home/h/rans_test && mkdir /home/h/rans_test/tar_sys && python3 /home/h/ransomware_set/impressions/utils/gen.py -path=/home/h/rans_test/tar_sys -batch=2 -tused=10 -usedunit=GB -mu=4 -fscore=1.0
@@ -77,17 +96,21 @@ def handle_flags():
     global parent_path, bacth_index, fs_used, file_count_distr, layout_score
     for arg in sys.argv[1:]:
         if arg.startswith("--clean"):
-            config_path = arg.split('=')
-            if len(config_path) == 1:
-                config_path = 'inputfile.sample'
+            config_name = arg.split('=')
+            if len(config_name) == 1:
+                config_name = None
             else:
-                config_path = config_path[1].strip()
+                config_name = config_name[1].strip()
             # get the path of current file
             path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-            clean_sys(path + '/' + config_path)
-            # rm the config file
-            if os.path.exists(path + '/' + config_path):
-                os.remove(path + '/' + config_path)
+            if config_name is None:
+                clean_sys(None)
+            else:
+                config_path = os.path.join(path, 'config')
+                clean_sys(config_path)
+                # rm the config file
+                if os.path.exists(config_path):
+                    os.remove(config_path)
             sys.exit(0)
         elif arg.startswith("-path"):
             parent_path = arg.split('=')[1].strip() + ' 1'
