@@ -7,11 +7,11 @@ Numfiles: NO K
 Numdirs: NO K
 Filesperdir: 10.2 N
 FilesizeDistr: Direct 3 99994 29 0.91
-FilecountDistr: Direct 2 4.0 2.45663283
+FilecountDistr: Direct 2 8 2.45663283
 Dircountfiles: Direct 2 2 2.36
 DirsizesubdirDistr: Indir DirsizesubdirDistr.txt
 Fileswithdepth: Direct 10
-Layoutscore: 0.0
+Layoutscore: 0.5
 Actualfilecreation: 1
 SpecialFlags: 10
 Flat 0

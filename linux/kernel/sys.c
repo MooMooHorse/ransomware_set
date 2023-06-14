@@ -1675,7 +1675,7 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
 	return do_prlimit(current, resource, &new_rlim, NULL);
 }
 
-SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_entry_t __user *, trace)
+SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t __user , diag_ctrl)
 {
 	int retval;
 	char* buf;
@@ -1685,10 +1685,18 @@ SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_entry_t __user 
 	switch (operation_id)	{
 		case 0:
 			printk(KERN_ERR "hey! you called a system call diag_ctrl!\n");
-			
 			break;
 		case 1:
 			printk(KERN_ERR "KERNEL LEVEL BIO TRACE BEGIN\n");
+			turn_on_trace();
+			break;
+		case 2:
+			printk(KERN_ERR "KERNEL LEVEL BIO TRACE END\n");
+			turn_off_trace();
+			break;
+		case 3:
+			printk(KERN_ERR "KERNEL LEVEL BIO TRACE CLEAR\n");
+			break;
 		default:
 			printk(KERN_ERR "Invalid operation id %d\n", operation_id);
 			retval = -1;

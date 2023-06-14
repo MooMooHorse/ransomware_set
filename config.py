@@ -34,7 +34,7 @@ if cfs_type == FS_NTFS:
     encoding_rule = UTF16
 
 MOUNT_CONFIG = {
-    'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
+    'dev_list' : ['/dev/vda', '/dev/vdb', '/dev/vdc', '/dev/vdd'],
     'cfs_type' : cfs_type,
     'enconding' : encoding_rule,
 }
@@ -47,7 +47,6 @@ BOOT_CONFIG = {
 
 
 tar_sys_info_path = os.path.join(framework_dir, "tar_sys_info")
-tar_sys_dump_path = os.path.join(tar_sys_info_path, "tar_sys_dump")
 tar_sys_path = os.path.join(framework_dir, "tar_sys")
 tar_sys_injected_path = os.path.join(tar_sys_path, "injected")
 backup_dir = os.path.join(framework_dir, "backup_dir")
@@ -61,7 +60,6 @@ PATHS = {
     "tar_sys_path": tar_sys_path,
     "injected_path": tar_sys_injected_path,
     "backup_dir_path": backup_dir,
-    "tar_sys_dump_path": tar_sys_dump_path,
     "impression_path": impression_path,
     "impression_gen_path": impression_gen_path,
     "impression_draw_path": impression_draw_path,
@@ -71,6 +69,7 @@ PATHS = {
 LOG_NAME = {
     'test_info' : 'test_info.log',
     'dye_info' : 'dye_info.log',
+    'trace_info' : 'trace.log',
 }
 
 # A set of parameters for the target system
@@ -125,6 +124,8 @@ def print_yellow(msg):
 
 def main():
     args = []
+    trace_log = os.path.join(PATHS["log_dir"], LOG_NAME["trace_info"])
+    log_dir = PATHS["log_dir"]
     default_disk = BOOT_CONFIG["default_disk"]
     backup_disk = BOOT_CONFIG["backup_disk"]
     core_dir = BOOT_CONFIG["core_dir"]
@@ -134,21 +135,18 @@ def main():
         (MAGIC_NUM["MAGIC_NUM2_03"] << 8) + (MAGIC_NUM["MAGIC_NUM2_04"]))
     magic3 = MAGIC_NUM["MAGIC_NUM3"]
     for arg in sys.argv[1:]:
-       
-        if arg.startswith("-dd"): # dump default_disk
+        if arg.startswith("-tfp"): # trace file path
+            args.append(f"{trace_log}")
+        elif arg.startswith("-dd"): # dump default_disk
             args.append(f"{default_disk}")
-        elif arg.startswith("-cd"): # dump core_dir
-            args.append(f"{core_dir}")
+        elif arg.startswith("-log"): # dump log directory
+            args.append(log_dir)
         elif arg.startswith("-ma"): # all magic numbers
             args.append(f"{magic1} {magic2} {magic3}")
         elif arg.startswith("-xma"): # all magic numbers in hex
             args.append(f"{hex(magic1)} {hex(magic2)} {hex(magic3)}")
-        elif arg.startswith("-tsdp"): # target system dump path
-            args.append(f"{PATHS['tar_sys_dump_path']}")
         elif arg.startswith("-en"): # encoding rule
             args.append(f"{encoding_rule}")
-        elif arg.startswith("-bkupdd"): # backup disk
-            args.append(backup_disk)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
