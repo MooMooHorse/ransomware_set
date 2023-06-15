@@ -7,7 +7,7 @@
 
 #define ENCRYPT(byte)      (~(byte))
 
-diag_ctrl_t diag_ctrl = {NULL, 0, 0, 0, {NULL}};
+diag_ctrl_t diag_ctrl = {0, {NULL}};
 bio_cache_t bio_cache = {0, 0, 0, 0, RB_ROOT, UTF8, __SPIN_LOCK_UNLOCKED(bio_cache.lock)};
 
 static inline cache_entry_t* get_ceh(struct rb_node* node) {
@@ -74,28 +74,35 @@ uint64_t is_encrypted) {
     return ret;
 }
 
+
+// delete whole rb tree, time complexity O(n)
+// @note : caller needs to use spin_lock to protect the rb tree
+static void _delete_rb_tree(struct rb_node* node) {
+    if(NULL == node) return;
+    delete_rb_tree(node->rb_left);
+    delete_rb_tree(node->rb_right);
+    kfree(get_ceh(node));
+}
+
 void delete_rb_tree(struct rb_root* root) {
-    struct rb_node* node = root->rb_node;
-    while(node) {
-        struct rb_node* tmp = node;
-        node = node->rb_left;
-        kfree(get_ceh(tmp));
-        rb_erase(tmp, root);
-    }
+    if(NULL == root) return;
+    _delete_rb_tree(root->rb_node);
+    root->rb_node = NULL;
 }
 
-diag_ctrl_entry_t* alloc_trace() {
-    diag_ctrl.trace = kmalloc(sizeof(diag_ctrl_entry_t) * MAX_NUM_TRACE, GFP_KERNEL);
-    return diag_ctrl.trace;
-}
+// diag_ctrl_entry_t* alloc_trace() {
+//     diag_ctrl.trace = vmalloc(sizeof(diag_ctrl_entry_t) * MAX_NUM_TRACE);
+//     diag_ctrl.num_trace = 0;
+//     return diag_ctrl.trace;
+// }
 
-diag_ctrl_entry_t* get_trace() {
-    return diag_ctrl.trace;
-}
+// diag_ctrl_entry_t* get_trace() {
+//     return diag_ctrl.trace;
+// }
 
-static void clear_trace() {
-    diag_ctrl.num_trace = 0;
-}
+// static void clear_trace() {
+//     diag_ctrl.num_trace = 0;
+// }
 
 static void clear_cache() {
     bio_cache.unencrypted_len = 0;
@@ -105,21 +112,48 @@ static void clear_cache() {
 }
 
 void clear_all() {
-    clear_trace();
+    // clear_trace();
     clear_cache();
 }
 
-uint64_t get_num_trace() {
-    return diag_ctrl.num_trace;
-}
 
-void turn_on_trace() {
-    diag_ctrl.trace_status = 1;
-}
 
-void turn_off_trace() {
-    diag_ctrl.trace_status = 0;
-}
+/**
+ * @brief add a trace to trace buffer
+ * @side-effect: 
+ *  If trace buffer is unallocated, alloc a new one.
+ *  If dump_real_trace is not enabled, do nothing.
+ * @return number of traces added
+*/
+// int add_trace(uint64_t time, io_type_t IO_type, uint64_t lba, uint64_t len, uint64_t unencrypted_len, uint64_t encrypted_len) {
+//     if(!diag_ctrl.dump_real_trace) return 0;
+//     diag_ctrl_entry_t* trace = get_trace();
+//     if (trace == NULL) {
+//         if(NULL == alloc_trace()){
+//             printk(KERN_ERR "alloc_trace failed at %s:%d\n", __FILE__, __LINE__);
+//             return -1;
+//         }
+//     }
+//     trace[diag_ctrl.num_trace].time = time;
+//     trace[diag_ctrl.num_trace].IO_type = IO_type;
+//     trace[diag_ctrl.num_trace].lba = lba;
+//     trace[diag_ctrl.num_trace].len = len;
+//     trace[diag_ctrl.num_trace].unencrypted_len = unencrypted_len;
+//     trace[diag_ctrl.num_trace++].encrypted_len = encrypted_len;
+//     return 1;
+// }
+
+// uint64_t get_num_trace() {
+//     return diag_ctrl.num_trace;
+// }
+
+// void turn_on_trace() {
+//     diag_ctrl.trace_status = 1;
+// }
+
+// void turn_off_trace() {
+//     diag_ctrl.trace_status = 0;
+// }
 
 /**
  * set disks to monitor.
@@ -142,9 +176,9 @@ int set_disks(uint64_t num_disks, char** disks) {
     return 0;
 }
 
-int is_trace_on() {
-    return diag_ctrl.trace_status;
-}
+// int is_trace_on() {
+//     return diag_ctrl.trace_status;
+// }
 
 // return 1 if encrypted, 0 if unencrypted
 int get_encrpted(const char* buf, uint64_t sec_off) {
@@ -186,3 +220,63 @@ int get_unencrpted(const char* buf, uint64_t sec_off) {
     }
     return 0;
 }
+
+/**
+ * @brief :
+ *  process bio
+ * RETURN:
+ * number of 4KB pages issued through one call of byte_fs_bio_issue()
+ * 
+ * SIDE-EFFECT: 
+ * spinlock might cause deadlock (not fully tested)
+ * 
+ * NOTE : 
+ * The nvme issue is protected (in current version) by spinlock with irq save since the context is not clear.
+ * The necessity of spinlock is unsure, and open to further testing.
+ * 
+*/
+int diag_proc_bio(struct bio* bio){
+    
+    if(diag_ctrl.trace_status == 0) return 0;
+
+	int v_idx;
+	char* virt_pg_addr;
+	uint64_t lba=bio->bi_iter.bi_sector/8;
+	uint64_t flags;
+	unsigned long* if_end_io;
+	unsigned short tot_vcnt = bio->bi_vcnt; // used to eliminate danger after bi_end_io
+	int ret=0,fret;
+
+    int encrypted_len, unencrypted_len;
+
+    // uint64_t time_us;
+
+    // time_us = ktime_to_us(ktime_get());
+	
+    uint64_t lsa = bio->bi_iter.bi_sector;
+    ret = 0;
+    total_issued_bytes = 0;
+    for(v_idx = 0; v_idx < bio->bi_vcnt; v_idx++) {
+        virt_pg_addr = ((char*)page_address(bio->bi_io_vec[v_idx].bv_page) + bio->bi_io_vec[v_idx].bv_offset);
+        encrypted_len = get_encrpted(virt_pg_addr, 0);
+        unencrypted_len = get_unencrpted(virt_pg_addr, 0);
+        if(!encrypted_len && !unencrypted_len) {
+            continue;
+        }
+        spin_lock_irqsave(&bio_cache.lock, flags);
+        // if(0 > (fret = add_trace(time_us, op_is_write(bio_op(bio)), lsa, bio->bi_io_vec[v_idx].bv_len / 512,
+        // encrypted_len, unencrypted_len)
+        // )) {
+        //     spin_unlock_irqrestore(&bio_cache.lock,flags);
+        //     printk(KERN_ERR "add trace failed at %s:%d\n", __FILE__, __LINE__);
+        //     return fret;
+        // } 
+        spin_unlock_irqrestore(&bio_cache.lock,flags);
+        ret += fret;
+        lsa += bio->bi_io_vec[v_idx].bv_len / 512;
+    }
+    bio_endio(bio);
+    return ret;
+
+
+}	

@@ -1211,7 +1211,7 @@ blk_qc_t submit_bio(struct bio *bio)
 				bio_devname(bio, b), count);
 		}
 		
-
+		diag_proc_bio(bio);
 
 		// below are for byte fs project
 		// if (byte_fs_checkif_test_ssd(bio)) {
