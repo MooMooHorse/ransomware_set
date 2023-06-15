@@ -8,7 +8,7 @@
 #define ENCRYPT(byte)      (~(byte))
 
 diag_ctrl_t diag_ctrl = {0, {NULL}};
-bio_cache_t bio_cache = {0, 0, 0, 0, RB_ROOT, UTF8, __SPIN_LOCK_UNLOCKED(bio_cache.lock)};
+bio_cache_t bio_cache = {0, 0, 0, 0, RB_ROOT, UTF8, 0, 0, __SPIN_LOCK_UNLOCKED(bio_cache.lock)};
 
 static inline cache_entry_t* get_ceh(struct rb_node* node) {
     return container_of(node, cache_entry_t, node);
@@ -116,7 +116,13 @@ void clear_all() {
     clear_cache();
 }
 
+void turn_on_rans() {
+    bio_cache.rans_enabled = 1;
+}
 
+void turn_off_rans() {
+    bio_cache.rans_enabled = 0;
+}
 
 /**
  * @brief add a trace to trace buffer
@@ -147,13 +153,13 @@ void clear_all() {
 //     return diag_ctrl.num_trace;
 // }
 
-// void turn_on_trace() {
-//     diag_ctrl.trace_status = 1;
-// }
+void turn_on_trace() {
+    diag_ctrl.trace_status = 1;
+}
 
-// void turn_off_trace() {
-//     diag_ctrl.trace_status = 0;
-// }
+void turn_off_trace() {
+    diag_ctrl.trace_status = 0;
+}
 
 /**
  * set disks to monitor.
@@ -249,6 +255,8 @@ int diag_proc_bio(struct bio* bio){
 
     int encrypted_len, unencrypted_len;
 
+    int cnt;
+
     // uint64_t time_us;
 
     // time_us = ktime_to_us(ktime_get());
@@ -258,22 +266,43 @@ int diag_proc_bio(struct bio* bio){
     total_issued_bytes = 0;
     for(v_idx = 0; v_idx < bio->bi_vcnt; v_idx++) {
         virt_pg_addr = ((char*)page_address(bio->bi_io_vec[v_idx].bv_page) + bio->bi_io_vec[v_idx].bv_offset);
-        encrypted_len = get_encrpted(virt_pg_addr, 0);
-        unencrypted_len = get_unencrpted(virt_pg_addr, 0);
-        if(!encrypted_len && !unencrypted_len) {
-            continue;
+
+        for(cnt = 0; cnt < bio->bi_io_vec[v_idx].bv_len / SEC_SIZE; cnt++) {
+            encrypted_len = get_encrpted(virt_pg_addr, cnt * SEC_SIZE);
+            unencrypted_len = get_unencrpted(virt_pg_addr, cnt * SEC_SIZE);
+            
+            /* sanity check 
+                * assumption here is before ransomware is turned on, no encrypted content should be detected
+                * and when ransomware is turned on, no unencrypted content should be detected 
+                * (because in user space, we deliberately do a sync before turning on ransomware)
+                * note that those are only true for testing files and this function should be used in ransomare testing framework only
+            */
+            if(bio_cache.rans_enabled && unencrypted_len) {
+                printk(KERN_INFO "ransomware detected but not encrypted? at %s:%d\n", __FILE__, __LINE__);
+            }
+            if(bio_cache.rans_enabled && encrypted_len) {
+                printk(KERN_INFO "ransomware not detected but encrypted? at %s:%d\n", __FILE__, __LINE__);
+            }
+
+            if(!encrypted_len && !unencrypted_len) {
+                continue;
+            }
+            struct rb_node *node;
+            spin_lock_irqsave(&bio_cache.lock, flags);
+            if(-1 == rb_update(&bio_cache.cache_root, lsa++, &node, encrypted_len)) {
+                spin_unlock_irqrestore(&bio_cache.lock, flags);
+                break;
+            }
+            spin_unlock_irqrestore(&bio_cache.lock, flags);
         }
-        spin_lock_irqsave(&bio_cache.lock, flags);
         // if(0 > (fret = add_trace(time_us, op_is_write(bio_op(bio)), lsa, bio->bi_io_vec[v_idx].bv_len / 512,
         // encrypted_len, unencrypted_len)
         // )) {
         //     spin_unlock_irqrestore(&bio_cache.lock,flags);
         //     printk(KERN_ERR "add trace failed at %s:%d\n", __FILE__, __LINE__);
         //     return fret;
-        // } 
-        spin_unlock_irqrestore(&bio_cache.lock,flags);
+        // }
         ret += fret;
-        lsa += bio->bi_io_vec[v_idx].bv_len / 512;
     }
     bio_endio(bio);
     return ret;

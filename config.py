@@ -51,6 +51,8 @@ tar_sys_path = os.path.join(framework_dir, "tar_sys")
 tar_sys_injected_path = os.path.join(tar_sys_path, "injected")
 backup_dir = os.path.join(framework_dir, "backup_dir")
 log_dir = os.path.join(framework_dir, "logs")
+blktrace_dir = os.path.join(framework_dir, "blktrace")
+blktrace_result = os.path.join(log_dir, "blktrace")
 
 BATCH_BASE = 10000
 
@@ -64,6 +66,8 @@ PATHS = {
     "impression_gen_path": impression_gen_path,
     "impression_draw_path": impression_draw_path,
     "log_dir" : log_dir,
+    "blktrace_dir" : blktrace_dir,
+    "blktrace_result" : blktrace_result,
 }
 
 LOG_NAME = {

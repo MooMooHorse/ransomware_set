@@ -17,7 +17,7 @@ import os
 import shutil
 import sys
 
-WAIT_TIME_SEC = 0.5
+WAIT_TIME_SEC = 0.1
 
 # Get the parent directory path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +27,7 @@ sys.path.append(parent_dir)
 
 from config import BOOT_CONFIG, MAGIC_NUM, PATHS, LOG_NAME
 from config import print_red
+from toplevel import test_id
 
 def add_magic_num_3(tar_sys_path, sync = False):
     """
@@ -71,54 +72,48 @@ def add_magic_num_1_2(tar_sys_path):
         for dir in dirs:
             os.rename(os.path.join(root, dir), os.path.join(root, magic_num_1_str + dir + magic_num_2_str))
 
-def launch_blktrace(blktrace_dir, device):
-    trace_file_path = blktrace_dir + '/tracefile'
-
-    # Create blktrace_dir if not exists
-    if not os.path.isdir(blktrace_dir):
-        os.mkdir(blktrace_dir)
-
+def launch_blktrace(blktrace_dir, device_list):
+    """
+    Launch blktrace and dump the trace to blktrace_dir.
+    Assumption (caller needs to make sure), blktrace_dir is an absolute path that exists
+    """
     import subprocess
+    # because of the stupid setting of blktrace, 
+    # the tracefiles will be in current directory, so  we need to change directory to blktrace_dir
+    cur_path = os.getcwd()
+    os.chdir(blktrace_dir)
 
-    def _launch_blktrace(device, output_file):
-        command = ['sudo', 'blktrace', '-d', device, '-o', output_file]
-        # get the current path 
-        path = os.getcwd()
-        process = subprocess.Popen(command, cwd = path)
-        # wait for 0.01 seconds to make sure blktrace is launched
-        import time
-        time.sleep(WAIT_TIME_SEC)
-        return process
-
-    blktrace_process_pid = _launch_blktrace(device, trace_file_path).pid + 1
-
-    # dump blktrace_process.pid to a file
-    with open(f"{blktrace_dir}/blktrace_pid", "w+") as f:
-        f.write(f"{blktrace_process_pid}")
+    command = ['sudo', 'blktrace']
+    
+    for device in device_list:
+        command.append('-d')
+        command.append(device)
+    
+    process = subprocess.Popen(command, cwd = blktrace_dir)
+    # wait for 0.01 seconds to make sure blktrace is launched
+    import time
+    time.sleep(WAIT_TIME_SEC)
+    
+    os.chdir(cur_path)
 
 def dump_trace_file(blktrace_dir):
     """
     Cloase the blktrace program and dump the trace to output file
     """
+    import subprocess
+    output_file = PATHS["blktrace_result"] + f"_{test_id}"
+    cur_path = os.getcwd()
+    os.chdir(blktrace_dir)
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
-    trace_file_path = blktrace_dir + '/tracefile'
     
-    import subprocess
-    def _launch_blkparse(trace_file, output_file):
-        # sudo blkparse -i tracefile -f "%T %S %N %3d\n"
-        # os.system('pwd')
-        command = ['sudo', 'blkparse', '-i', trace_file, '-f', '%T %S %N %3d\n', '-o', output_file]
-        path = os.getcwd()
-        process = subprocess.run(command, cwd = path)
+    command = ['sudo', 'blkparse', '-f', '%t %S %N %3d\n', '-o', output_file]
+    process = subprocess.run(command, cwd = blktrace_dir)
     # sleep for 0.01 seconds to make sure blktrace is shut down
     import time
     time.sleep(WAIT_TIME_SEC)
-    _launch_blkparse(trace_file_path, f"{blktrace_dir}/blkparse_output")
-    # now we can remove the trace files
-    # os.system(f"sudo rm {default_trace_file_path}*")
-    # now we re-launch blktrace
-    # launch_blktrace(blktrace_dir)
+    
+    os.chdir(cur_path)
 
 def clear_trace_file(blktrace_dir):
     # clear the blktrace_dir
@@ -277,13 +272,12 @@ def _run_ransomware(blktrace_dir):
     # # Terminate the strace process
     # subprocess.run(["sudo", "pkill", "strace"])
 
-def run_ransomware(tar_sys_path, blktrace_dir, device):
+def run_ransomware(tar_sys_path, blktrace_dir, device_list):
     """
     Enable the blk trace, run ransomware, then close the blk trace
     """
-    clear_trace_file(blktrace_dir)
-    files_sync(tar_sys_path)
-    launch_blktrace(blktrace_dir, device)
+    
+    launch_blktrace(blktrace_dir, device_list)
     _run_ransomware(blktrace_dir)
     dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
 
@@ -301,21 +295,12 @@ def main():
     """
     for arg in sys.argv[1:]:
         if arg.startswith("-run"):
-            # This should be executed in the parent directory of the file, do a sanity check here
-            if not os.path.isdir("rans_test"):
-                print_red("Please run this script in the parent directory of rans_test directory")
-                sys.exit(1)
             blktrace_dir = BOOT_CONFIG["blktrace_dir"]
             tar_sys_path = PATHS["tar_sys_path"]
-            run_ransomware(tar_sys_path, blktrace_dir, BOOT_CONFIG["default_disk"])
-        elif arg.startswith("-runbackup"):
-            # This should be executed in the parent directory of the file, do a sanity check here
-            if not os.path.isdir("rans_test"):
-                print_red("Please run this script in the parent directory of rans_test directory")
-                sys.exit(1)
-            blktrace_dir = BOOT_CONFIG["backup_blktrace_dir"]
-            tar_sys_path = PATHS["backup_dir_path"]
-            run_ransomware(tar_sys_path, blktrace_dir, BOOT_CONFIG["backup_disk"])
+            if os.path.exists(blktrace_dir):
+                shutil.rmtree(blktrace_dir)
+                os.mkdir(blktrace_dir)
+            run_ransomware(tar_sys_path, blktrace_dir, [BOOT_CONFIG["default_disk"]])
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

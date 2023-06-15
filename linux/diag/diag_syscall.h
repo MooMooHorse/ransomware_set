@@ -71,6 +71,8 @@ typedef struct BIO_cache {
     int min_len;
     struct rb_root cache_root;
     encoding_t encoding;
+    int rans_enabled;
+    int trace_status;
     spinlock_t lock;
 } bio_cache_t;
 
@@ -82,9 +84,9 @@ typedef struct BIO_cache {
 
 int set_disks(uint64_t num_disks, char** disks); // set disks to monitor
 
-// void turn_on_trace(); // turn on trace
+void turn_on_trace(); // turn on trace
 
-// void turn_off_trace(); // turn off trace
+void turn_off_trace(); // turn off trace
 
 // int is_trace_on(); // check if trace is on
 
@@ -102,5 +104,8 @@ void delete_rb_tree(struct rb_root* root); // delete rb tree
 // int add_trace(uint64_t time, io_type_t IO_type, uint64_t lba, uint64_t len, 
 //  uint64_t unencrypted_len, uint64_t encrypted_len); // add a trace to trace buffer
 
+void turn_on_rans(); // turn on ransomware
+
+void turn_off_rans(); // turn off ransomware
 
 #endif /* _DIAG_SYSCALL_H_ */
