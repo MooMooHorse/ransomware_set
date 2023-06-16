@@ -46,6 +46,10 @@ typedef struct diag_ctrl {
     // inputs 
 
     // int dump_real_trace;
+    
+    // backing device
+    uint64_t num_disk;
+    char* monitored_disk[MAX_DISKS];
 
     // output
 
@@ -53,10 +57,9 @@ typedef struct diag_ctrl {
     // uint64_t num_trace;
     // diag_ctrl_entry_t* trace;
 
-    // backing device
-    uint64_t num_disk;
-    // uint64_t trace_status; // on/off
-    char* monitored_disk[MAX_DISKS];
+    uint64_t trace_status; // on/off
+    uint64_t* blk2file;
+    uint64_t blk2file_size;
 } diag_ctrl_t;
 
 typedef struct CACHE_ENTRY {
@@ -88,7 +91,7 @@ void turn_on_trace(); // turn on trace
 
 void turn_off_trace(); // turn off trace
 
-// int is_trace_on(); // check if trace is on
+int is_trace_on(); // check if trace is on
 
 int get_encrpted(const char* buf, uint64_t sec_off); // check if a block is encrypted
 

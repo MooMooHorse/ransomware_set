@@ -119,11 +119,6 @@ def dump_trace_file(blktrace_dir, devices):
     time.sleep(WAIT_TIME_SEC)
     
     os.chdir(cur_path)
-
-def clear_trace_file(blktrace_dir):
-    # clear the blktrace_dir
-    if os.path.isdir(blktrace_dir):
-        shutil.rmtree(blktrace_dir)
     
 
 def files_sync(tar_sys_path):
@@ -138,90 +133,8 @@ def files_sync(tar_sys_path):
                 os.fsync(f.fileno())
     # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
 
-def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
-    """ Debugging purpose function
-    Given sector number produced by blkparse, we pipe that into dd command and dump the sector information.
-    The sector number is given, and we want to dump `bytes` bytes information starting from the sector number.
-    By dumping, I mean we scan the sector information and find the magic number 1, if we find it, we increment the counter unencrpyted by 1.
-    """
-    magic_1 = [MAGIC_NUM["MAGIC_NUM1_01"], MAGIC_NUM["MAGIC_NUM1_02"], MAGIC_NUM["MAGIC_NUM1_03"], MAGIC_NUM["MAGIC_NUM1_04"]]
-    unencrpyted = 0 # counter for unencrpyted bytes
-    # first we need to find the offset of the sector number
-    offset = sec_num * 512
-    # then we need to find the offset of the sector number + bytes
-    offset_end = offset + bytes
-    # now we need to find the sector number of the offset
-    sec_num_offset = offset // 512
-    # now we need to find the sector number of the offset_end
-    sec_num_offset_end = offset_end // 512
 
-    # now we use dd to dump the sector information
-    import subprocess
-    print(f"Dumping sector information from {sec_num_offset} to {sec_num_offset_end}...")
-    command = ['sudo', 'dd', 'if=' + dev_path, 'skip=' + str(sec_num_offset), 'count=' + str(sec_num_offset_end - sec_num_offset), 'status=none']
-    
-    try:
-        output = subprocess.check_output(command)
-        # now we need to scan the output and find the magic number 1
-        # magic number 1 is 4 bytes
-        for i in range(0, len(output) - 3):
-            if output[i] == magic_1[0] and output[i + 1] == magic_1[1] and output[i + 2] == magic_1[2] and output[i + 3] == magic_1[3]:
-                unencrpyted += 1
 
-        # append the output to dump_path
-        with open(dump_path, "ab") as f:
-            f.write(output)
-    except subprocess.CalledProcessError as e:
-        print(e.output)
-        sys.exit(1)
-
-    return unencrpyted
-
-def parse_trace_file(blktrace_dir):
-    default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
-    trace_path = BOOT_CONFIG["trace_path"]
-    dump_path = f"{blktrace_dir}/dump"
-    device_path = BOOT_CONFIG["default_disk"]
-
-    # for each legal line the format is as follows:
-    # '%T %S %N %3d\n' meaning timestamp, sector number, bytes, Operation Type
-    # Time is in seconds operation type 
-    # Operation Type : This is a small string containing at least one character ('R' for read, 'W' for write, or 'D' for block discard operation), and optionally either a 'B' (for barrier operations) or 'S' (for synchronous operations).
-    # We only care about R and W if neither are present, we ignore the line
-
-    # create empty set for sectors
-    sectors_set = set()
-    unencrpted = 0
-
-    with open(trace_path, "r") as f:
-        lines = f.readlines()
-        for line in lines:
-            # check if line is legal by using split(' ')
-            line = line.split(' ')
-            # iterate through the line and remove empty strings
-            line = [x for x in line if x != '']
-            if len(line) != 4:
-                print(f"Line {line} is not legal")
-                continue
-            # now we need to check if the operation type has R or W
-            if 'R' not in line[3] and 'W' not in line[3]:
-                print(f"Line {line} is not legal")
-                continue
-            # print(line[0], line[1], line[2], line[3])
-            # now it's legal
-            unencrpted += find_magic_1(device_path, int(line[1]), int(line[2]), sectors_set, dump_path)
-    print(f"Number of unencrpyted bytes: {unencrpted}")
-
-def inject_debug_file(tar_sys_path):
-    """
-    Create a file for debugging purpose with length DEBUG_FILE_LEN bytes.
-    Each byte is ASCII CHAR 'd'
-    """
-    DEBUG_FILE_LEN = 6000
-    debug_file_path = f"{tar_sys_path}/debug_file"
-    with open(debug_file_path, "wb+") as f:
-        for i in range(0, DEBUG_FILE_LEN):
-            f.write(MAGIC_NUM["DEBUG_MAGIC"].encode('utf-8'))
 
 def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     """
@@ -312,3 +225,95 @@ def main():
 
 if __name__ == '__main__':
     main()
+    
+    
+    
+
+def find_magic_1(dev_path,sec_num, bytes, sectors_set, dump_path):
+    """ Debugging purpose function
+    Given sector number produced by blkparse, we pipe that into dd command and dump the sector information.
+    The sector number is given, and we want to dump `bytes` bytes information starting from the sector number.
+    By dumping, I mean we scan the sector information and find the magic number 1, if we find it, we increment the counter unencrpyted by 1.
+    """
+    return
+    # magic_1 = [MAGIC_NUM["MAGIC_NUM1_01"], MAGIC_NUM["MAGIC_NUM1_02"], MAGIC_NUM["MAGIC_NUM1_03"], MAGIC_NUM["MAGIC_NUM1_04"]]
+    # unencrpyted = 0 # counter for unencrpyted bytes
+    # # first we need to find the offset of the sector number
+    # offset = sec_num * 512
+    # # then we need to find the offset of the sector number + bytes
+    # offset_end = offset + bytes
+    # # now we need to find the sector number of the offset
+    # sec_num_offset = offset // 512
+    # # now we need to find the sector number of the offset_end
+    # sec_num_offset_end = offset_end // 512
+
+    # # now we use dd to dump the sector information
+    # import subprocess
+    # print(f"Dumping sector information from {sec_num_offset} to {sec_num_offset_end}...")
+    # command = ['sudo', 'dd', 'if=' + dev_path, 'skip=' + str(sec_num_offset), 'count=' + str(sec_num_offset_end - sec_num_offset), 'status=none']
+    
+    # try:
+    #     output = subprocess.check_output(command)
+    #     # now we need to scan the output and find the magic number 1
+    #     # magic number 1 is 4 bytes
+    #     for i in range(0, len(output) - 3):
+    #         if output[i] == magic_1[0] and output[i + 1] == magic_1[1] and output[i + 2] == magic_1[2] and output[i + 3] == magic_1[3]:
+    #             unencrpyted += 1
+
+    #     # append the output to dump_path
+    #     with open(dump_path, "ab") as f:
+    #         f.write(output)
+    # except subprocess.CalledProcessError as e:
+    #     print(e.output)
+    #     sys.exit(1)
+
+    # return unencrpyted
+
+def parse_trace_file(blktrace_dir):
+    return
+    default_trace_file_path = BOOT_CONFIG["default_trace_file_path"]
+    trace_path = BOOT_CONFIG["trace_path"]
+    dump_path = f"{blktrace_dir}/dump"
+    device_path = BOOT_CONFIG["default_disk"]
+
+    # for each legal line the format is as follows:
+    # '%T %S %N %3d\n' meaning timestamp, sector number, bytes, Operation Type
+    # Time is in seconds operation type 
+    # Operation Type : This is a small string containing at least one character ('R' for read, 'W' for write, or 'D' for block discard operation), and optionally either a 'B' (for barrier operations) or 'S' (for synchronous operations).
+    # We only care about R and W if neither are present, we ignore the line
+
+    # create empty set for sectors
+    sectors_set = set()
+    unencrpted = 0
+
+    with open(trace_path, "r") as f:
+        lines = f.readlines()
+        for line in lines:
+            # check if line is legal by using split(' ')
+            line = line.split(' ')
+            # iterate through the line and remove empty strings
+            line = [x for x in line if x != '']
+            if len(line) != 4:
+                print(f"Line {line} is not legal")
+                continue
+            # now we need to check if the operation type has R or W
+            if 'R' not in line[3] and 'W' not in line[3]:
+                print(f"Line {line} is not legal")
+                continue
+            # print(line[0], line[1], line[2], line[3])
+            # now it's legal
+            unencrpted += find_magic_1(device_path, int(line[1]), int(line[2]), sectors_set, dump_path)
+    print(f"Number of unencrpyted bytes: {unencrpted}")
+
+
+def inject_debug_file(tar_sys_path):
+    """
+    Create a file for debugging purpose with length DEBUG_FILE_LEN bytes.
+    Each byte is ASCII CHAR 'd'
+    """
+    return
+    DEBUG_FILE_LEN = 6000
+    debug_file_path = f"{tar_sys_path}/debug_file"
+    with open(debug_file_path, "wb+") as f:
+        for i in range(0, DEBUG_FILE_LEN):
+            f.write(MAGIC_NUM["DEBUG_MAGIC"].encode('utf-8'))

@@ -7,7 +7,7 @@
 
 #define ENCRYPT(byte)      (~(byte))
 
-diag_ctrl_t diag_ctrl = {0, {NULL}};
+diag_ctrl_t diag_ctrl = {0, {NULL}, 0 , NULL, 0};
 bio_cache_t bio_cache = {0, 0, 0, 0, RB_ROOT, UTF8, 0, 0, __SPIN_LOCK_UNLOCKED(bio_cache.lock)};
 
 static inline cache_entry_t* get_ceh(struct rb_node* node) {
@@ -56,6 +56,7 @@ uint64_t is_encrypted) {
 
     if(NULL == *_new) {
         cache_entry_t* ceh = buf_alloc(lpa, is_encrypted);
+        diag_ctrl.blk2file_size++;
         if(NULL == ceh) {
             printk(KERN_ERR "buf_alloc failed at %s:%d\n", __FILE__, __LINE__);
             return -1;
@@ -90,76 +91,16 @@ void delete_rb_tree(struct rb_root* root) {
     root->rb_node = NULL;
 }
 
-// diag_ctrl_entry_t* alloc_trace() {
-//     diag_ctrl.trace = vmalloc(sizeof(diag_ctrl_entry_t) * MAX_NUM_TRACE);
-//     diag_ctrl.num_trace = 0;
-//     return diag_ctrl.trace;
-// }
 
-// diag_ctrl_entry_t* get_trace() {
-//     return diag_ctrl.trace;
-// }
-
-// static void clear_trace() {
-//     diag_ctrl.num_trace = 0;
-// }
 
 static void clear_cache() {
     bio_cache.unencrypted_len = 0;
     bio_cache.encrypted_len = 0;
     delete_rb_tree(&bio_cache.cache_root);
     bio_cache.cache_root = RB_ROOT;
+    diag_ctrl.blk2file_size = 0;
 }
 
-void clear_all() {
-    // clear_trace();
-    clear_cache();
-}
-
-void turn_on_rans() {
-    bio_cache.rans_enabled = 1;
-}
-
-void turn_off_rans() {
-    bio_cache.rans_enabled = 0;
-}
-
-/**
- * @brief add a trace to trace buffer
- * @side-effect: 
- *  If trace buffer is unallocated, alloc a new one.
- *  If dump_real_trace is not enabled, do nothing.
- * @return number of traces added
-*/
-// int add_trace(uint64_t time, io_type_t IO_type, uint64_t lba, uint64_t len, uint64_t unencrypted_len, uint64_t encrypted_len) {
-//     if(!diag_ctrl.dump_real_trace) return 0;
-//     diag_ctrl_entry_t* trace = get_trace();
-//     if (trace == NULL) {
-//         if(NULL == alloc_trace()){
-//             printk(KERN_ERR "alloc_trace failed at %s:%d\n", __FILE__, __LINE__);
-//             return -1;
-//         }
-//     }
-//     trace[diag_ctrl.num_trace].time = time;
-//     trace[diag_ctrl.num_trace].IO_type = IO_type;
-//     trace[diag_ctrl.num_trace].lba = lba;
-//     trace[diag_ctrl.num_trace].len = len;
-//     trace[diag_ctrl.num_trace].unencrypted_len = unencrypted_len;
-//     trace[diag_ctrl.num_trace++].encrypted_len = encrypted_len;
-//     return 1;
-// }
-
-// uint64_t get_num_trace() {
-//     return diag_ctrl.num_trace;
-// }
-
-void turn_on_trace() {
-    diag_ctrl.trace_status = 1;
-}
-
-void turn_off_trace() {
-    diag_ctrl.trace_status = 0;
-}
 
 /**
  * set disks to monitor.
@@ -182,9 +123,7 @@ int set_disks(uint64_t num_disks, char** disks) {
     return 0;
 }
 
-// int is_trace_on() {
-//     return diag_ctrl.trace_status;
-// }
+
 
 // return 1 if encrypted, 0 if unencrypted
 int get_encrpted(const char* buf, uint64_t sec_off) {
@@ -307,5 +246,76 @@ int diag_proc_bio(struct bio* bio){
     bio_endio(bio);
     return ret;
 
-
 }	
+
+
+
+void clear_all() {
+    // clear_trace();
+    clear_cache();
+}
+
+void turn_on_rans() {
+    bio_cache.rans_enabled = 1;
+}
+
+void turn_off_rans() {
+    bio_cache.rans_enabled = 0;
+}
+
+void turn_on_trace() {
+    diag_ctrl.trace_status = 1;
+}
+
+void turn_off_trace() {
+    diag_ctrl.trace_status = 0;
+}
+
+int is_trace_on() {
+    return diag_ctrl.trace_status;
+}
+
+
+/**
+ * @brief add a trace to trace buffer
+ * @side-effect: 
+ *  If trace buffer is unallocated, alloc a new one.
+ *  If dump_real_trace is not enabled, do nothing.
+ * @return number of traces added
+*/
+// int add_trace(uint64_t time, io_type_t IO_type, uint64_t lba, uint64_t len, uint64_t unencrypted_len, uint64_t encrypted_len) {
+//     if(!diag_ctrl.dump_real_trace) return 0;
+//     diag_ctrl_entry_t* trace = get_trace();
+//     if (trace == NULL) {
+//         if(NULL == alloc_trace()){
+//             printk(KERN_ERR "alloc_trace failed at %s:%d\n", __FILE__, __LINE__);
+//             return -1;
+//         }
+//     }
+//     trace[diag_ctrl.num_trace].time = time;
+//     trace[diag_ctrl.num_trace].IO_type = IO_type;
+//     trace[diag_ctrl.num_trace].lba = lba;
+//     trace[diag_ctrl.num_trace].len = len;
+//     trace[diag_ctrl.num_trace].unencrypted_len = unencrypted_len;
+//     trace[diag_ctrl.num_trace++].encrypted_len = encrypted_len;
+//     return 1;
+// }
+
+// uint64_t get_num_trace() {
+//     return diag_ctrl.num_trace;
+// }
+
+
+// diag_ctrl_entry_t* alloc_trace() {
+//     diag_ctrl.trace = vmalloc(sizeof(diag_ctrl_entry_t) * MAX_NUM_TRACE);
+//     diag_ctrl.num_trace = 0;
+//     return diag_ctrl.trace;
+// }
+
+// diag_ctrl_entry_t* get_trace() {
+//     return diag_ctrl.trace;
+// }
+
+// static void clear_trace() {
+//     diag_ctrl.num_trace = 0;
+// }
