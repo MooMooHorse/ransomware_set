@@ -35,12 +35,6 @@
 #define PRE_ATTACK          0
 #define POST_ATTACK         1
 
-typedef enum ENCODING_TYPE {
-    UTF8 = 0,
-    UTF16,
-} encoding_t;
-
-
 typedef struct CACHE_ENTRY {
     uint64_t l, r; // l, r should be sector size aligned
     int is_cache; // if this is a cached BIO (lazy update)

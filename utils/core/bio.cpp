@@ -70,8 +70,6 @@ uint64_t size) {
         } else {
             this->debug.add_hit();
             if(ceh->is_cache == 0) {
-                // this->debug.hit_encrypted(ceh->encrypted);
-                // this->debug.hit_unencrypted(ceh->unencrypted);
                 ceh->is_cache = 1;
                 this->cached_list.push(ceh->l);
                 this->num_cached++;
