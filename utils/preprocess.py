@@ -96,7 +96,7 @@ def launch_blktrace(blktrace_dir, device_list):
     
     os.chdir(cur_path)
 
-def dump_trace_file(blktrace_dir):
+def dump_trace_file(blktrace_dir, devices):
     """
     Cloase the blktrace program and dump the trace to output file
     """
@@ -107,7 +107,12 @@ def dump_trace_file(blktrace_dir):
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
     
-    command = ['sudo', 'blkparse', '-f', '%t %S %N %3d\n', '-o', output_file]
+    command = ['sudo', 'blkparse']
+    
+    for device in  devices:
+        command = command + devices.split('/')[1]
+    
+    command = command + ['-f', '%t %S %N %3d\n', '-o', output_file]
     process = subprocess.run(command, cwd = blktrace_dir)
     # sleep for 0.01 seconds to make sure blktrace is shut down
     import time
@@ -279,7 +284,7 @@ def run_ransomware(tar_sys_path, blktrace_dir, device_list):
     
     launch_blktrace(blktrace_dir, device_list)
     _run_ransomware(blktrace_dir)
-    dump_trace_file(blktrace_dir) # it will implicitly close the blktrace
+    dump_trace_file(blktrace_dir, device_list) # it will implicitly close the blktrace
 
 def main():
     """
