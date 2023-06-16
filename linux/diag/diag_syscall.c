@@ -263,6 +263,7 @@ void get_blk2file(uint64_t* __user buf) {
         cache_entry_t* ceh = get_ceh(node);
         diag_ctrl.blk2file[diag_ctrl.blk2file_size++] = ceh->lsa;
     }
+    copy_to_user(buf, diag_ctrl.blk2file, sizeof(uint64_t) * diag_ctrl.blk2file_size);
     vfree(diag_ctrl.blk2file);
 }
 
