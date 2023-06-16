@@ -248,7 +248,23 @@ int diag_proc_bio(struct bio* bio){
 
 }	
 
+uint64_t get_blk2file_size() {
+    return diag_ctrl.blk2file_size;
+}
 
+void get_blk2file(uint64_t* __user buf) {
+    struct rb_node *node;
+    if(diag_ctrl.blk2file_size < (1<<12)) {
+        diag_ctrl.blk2file = vmalloc(sizeof(uint64_t) * (1<<12));
+    } else {
+        diag_ctrl.blk2file = vmalloc(((sizeof(uint64_t) * diag_ctrl.blk2file_size) >> 12) << 12);
+    }
+    for(node = rb_first(&bio_cache.cache_root); node; node = rb_next(node)) {
+        cache_entry_t* ceh = get_ceh(node);
+        diag_ctrl.blk2file[diag_ctrl.blk2file_size++] = ceh->lsa;
+    }
+    vfree(diag_ctrl.blk2file);
+}
 
 void clear_all() {
     // clear_trace();

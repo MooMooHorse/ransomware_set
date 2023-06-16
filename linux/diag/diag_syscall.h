@@ -111,4 +111,8 @@ void turn_on_rans(); // turn on ransomware
 
 void turn_off_rans(); // turn off ransomware
 
+uint64_t get_blk2file_size(); // get blk2file size
+
+void get_blk2file(uint64_t* __user buf); // get blk2file to user space
+
 #endif /* _DIAG_SYSCALL_H_ */
