@@ -231,6 +231,8 @@ uint64_t get_blk2file_size(void) {
 
 void get_blk2file(uint64_t* __user buf) {
     struct rb_node *node;
+    int cnt;
+    cnt = 0;
     if(diag_ctrl.blk2file_size < (1<<12)) {
         diag_ctrl.blk2file = vmalloc(sizeof(uint64_t) * (1<<12));
     } else {
@@ -238,7 +240,7 @@ void get_blk2file(uint64_t* __user buf) {
     }
     for(node = rb_first(&bio_cache.cache_root); node; node = rb_next(node)) {
         cache_entry_t* ceh = get_ceh(node);
-        diag_ctrl.blk2file[diag_ctrl.blk2file_size++] = ceh->lsa;
+        diag_ctrl.blk2file[cnt++] = ceh->lsa;
     }
     copy_to_user(buf, diag_ctrl.blk2file, sizeof(uint64_t) * diag_ctrl.blk2file_size);
     vfree(diag_ctrl.blk2file);

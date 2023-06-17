@@ -33,6 +33,7 @@ cfs_type = MOUNT_CONFIG['cfs_type']
 start_record_bin = PATHS["start_record_bin"]
 end_record_bin = PATHS["end_record_bin"]
 blk2file_bin = PATHS["blk2file_bin"]
+clear_record_bin = PATHS["clear_bin"]
 
 def mount_dev(dev_path, mount_path, cfs_type):
     # check if mount_path is already mounted
@@ -143,13 +144,16 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         os.system(blk2file_bin)
 
         os.system(end_record_bin)
+
+        os.system(clear_record_bin)
         
         test_id += 1
         
 def warmup(tar_sys_path):
     print("warmup start")
     tar_sys_gen_path = PATHS["impression_gen_path"]
-    os.system(f"python3 {tar_sys_gen_path} -path={tar_sys_path} -batch=1 -tused=35 -usedunit=GB -mu=9.48 -fscore=0.8")
+    print(tar_sys_gen_path)
+    os.system(f"python3 {tar_sys_gen_path} -path={tar_sys_path} -batch=1 -tused=10 -usedunit=GB -mu=9.48 -fscore=0.8")
 
     print("warmup allocated, need removal")
 

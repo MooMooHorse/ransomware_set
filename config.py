@@ -34,7 +34,7 @@ if cfs_type == FS_NTFS:
     encoding_rule = UTF16
 
 MOUNT_CONFIG = {
-    'dev_list' : ['/dev/vda', '/dev/vdb', '/dev/vdc', '/dev/vdd'],
+    'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde'],
     'cfs_type' : cfs_type,
     'enconding' : encoding_rule,
 }
@@ -58,6 +58,7 @@ syscall_dir = os.path.join(cur_file_path, 'utils', 'syscall', 'bin')
 start_record_bin = os.path.join(syscall_dir, 'start')
 end_record_bin = os.path.join(syscall_dir, 'end')
 blk2file_bin = os.path.join(syscall_dir, 'blk2file')
+clear_bin = os.path.join(syscall_dir, 'clear')
 rans_path = os.path.join(cur_file_path, 'utils', 'preprocess.py')
 
 BATCH_BASE = 10000
@@ -79,6 +80,7 @@ PATHS = {
     "start_record_bin" : start_record_bin,
     "end_record_bin" : end_record_bin,
     "blk2file_bin" : blk2file_bin,
+    "clear_bin" : clear_bin,
     "rans_path" : rans_path,
 }
 
