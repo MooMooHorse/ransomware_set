@@ -16,6 +16,29 @@
 #include <linux/ctype.h>
 #include <linux/vmalloc.h>
 
+#include <linux/bio.h>
+#include <linux/blkdev.h>
+#include <linux/blk-mq.h>
+#include <linux/highmem.h>
+#include <linux/mm.h>
+#include <linux/kernel_stat.h>
+#include <linux/string.h>
+#include <linux/init.h>
+#include <linux/completion.h>
+#include <linux/slab.h>
+#include <linux/swap.h>
+#include <linux/writeback.h>
+#include <linux/task_io_accounting_ops.h>
+#include <linux/fault-inject.h>
+#include <linux/list_sort.h>
+#include <linux/delay.h>
+#include <linux/ratelimit.h>
+#include <linux/pm_runtime.h>
+#include <linux/blk-cgroup.h>
+#include <linux/debugfs.h>
+#include <linux/bpf.h>
+#include <linux/printk.h>
+
 // #define MAX_NUM_TRACE       (1 << 27) // 128 M traces
 #define MAX_DISKS           50
 
@@ -23,10 +46,6 @@
 // after 16 contiguous encrypted magic number, we mark this block as encrypted
 #define DYE_THRESHOLD       16 
 
-typedef enum ENCODING_TYPE {
-    UTF8 = 0,
-    UTF16,
-} encoding_t;
 
 
 typedef enum IO_TYPE {
@@ -47,10 +66,10 @@ typedef struct diag_ctrl {
 
     // int dump_real_trace;
     
+    uint64_t magic;
     // backing device
     uint64_t num_disk;
     char* monitored_disk[MAX_DISKS];
-
     // output
 
     // trace buffer
@@ -63,17 +82,15 @@ typedef struct diag_ctrl {
 } diag_ctrl_t;
 
 typedef struct CACHE_ENTRY {
-    uint64_t lpa;
+    uint64_t lsa;
     uint32_t is_encrypted;
     struct rb_node node;
 } cache_entry_t;
 
 typedef struct BIO_cache {
     uint64_t unencrypted_len, encrypted_len; // # blocks of unencrypted/encrypted data
-    uint64_t magic;
     int min_len;
     struct rb_root cache_root;
-    encoding_t encoding;
     int rans_enabled;
     int trace_status;
     spinlock_t lock;
@@ -87,11 +104,11 @@ typedef struct BIO_cache {
 
 int set_disks(uint64_t num_disks, char** disks); // set disks to monitor
 
-void turn_on_trace(); // turn on trace
+void turn_on_trace(void); // turn on trace
 
-void turn_off_trace(); // turn off trace
+void turn_off_trace(void); // turn off trace
 
-int is_trace_on(); // check if trace is on
+int is_trace_on(void); // check if trace is on
 
 int get_encrpted(const char* buf, uint64_t sec_off); // check if a block is encrypted
 
@@ -100,19 +117,23 @@ int get_unencrypted(const char* buf, uint64_t sec_off); // check if a block is u
 // update bio_cache
 int64_t rb_update(struct rb_root* root, uint64_t lpa, struct rb_node** node, uint64_t is_encrypted); 
 
-void clear_all(); // clear trace and cache
+void clear_all(void); // clear trace and cache
 
 void delete_rb_tree(struct rb_root* root); // delete rb tree
 
 // int add_trace(uint64_t time, io_type_t IO_type, uint64_t lba, uint64_t len, 
 //  uint64_t unencrypted_len, uint64_t encrypted_len); // add a trace to trace buffer
 
-void turn_on_rans(); // turn on ransomware
+void turn_on_rans(void); // turn on ransomware
 
-void turn_off_rans(); // turn off ransomware
+void turn_off_rans(void); // turn off ransomware
 
-uint64_t get_blk2file_size(); // get blk2file size
+uint64_t get_blk2file_size(void); // get blk2file size
 
 void get_blk2file(uint64_t* __user buf); // get blk2file to user space
+
+int diag_proc_bio(struct bio* bio); // process bio
+
+void set_magic(uint64_t magic); // set magic number
 
 #endif /* _DIAG_SYSCALL_H_ */

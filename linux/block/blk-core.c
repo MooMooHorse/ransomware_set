@@ -48,6 +48,8 @@
 #include "../ssd/ftl.h"
 #include "ssd/bytefs_debug_bio.h"
 
+#include "../diag/diag_syscall.h"
+
 #ifdef CONFIG_DEBUG_FS
 struct dentry *blk_debugfs_root;
 #endif

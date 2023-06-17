@@ -1,1 +1,1 @@
-obj-y :=	write_begin.o
+obj-y :=	diag_syscall.o write_begin.o

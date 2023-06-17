@@ -21,7 +21,7 @@ static inline cache_entry_t* get_ceh(struct rb_node* node) {
     return container_of(node, cache_entry_t, node);
 }
 
-static inline cache_entry_t* buf_alloc(uint64_t l, uint64_t r, int encrypted, int unencrypted) {
+static inline cache_entry_t* buf_alloc(uint64_t l, int encrypted, int unencrypted) {
     cache_entry_t* ret;
     try {
         ret = new cache_entry_t;
@@ -30,8 +30,6 @@ static inline cache_entry_t* buf_alloc(uint64_t l, uint64_t r, int encrypted, in
         return NULL;
     }
     ret->l = l;
-    ret->r = r;
-    ret->is_cache = 1;
     ret->encrypted = encrypted;
     ret->unencrypted = unencrypted;
     return ret;
@@ -39,22 +37,17 @@ static inline cache_entry_t* buf_alloc(uint64_t l, uint64_t r, int encrypted, in
 
 void BIO_Cache::_cache_insert(cache_entry_t* ceh) {
     this->num_entries++;
-    this->cached_list.push(ceh->l);
-    this->encrypted_len += ceh->encrypted;
     this->unencrypted_len += ceh->unencrypted;
 }
 
-int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t l, struct rb_node** node, 
-uint64_t size) {
+int BIO_Cache::is_rans_on() {
+    return this->rans_on;
+}
+
+int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, struct rb_node** node) {
     struct rb_node** _new;
     struct rb_node* parent = NULL;
     int64_t ret = -1;
-    #ifndef V1_ENABLE
-    if(size != 1) { // current implementation is, each time we insert one sector, and we don't merge nodes
-        printf("size != 1 : check code version\n");
-        return -1;
-    }
-    #endif
 
     if(NULL == root) return -1;
 
@@ -63,26 +56,25 @@ uint64_t size) {
     while(*_new) {
         cache_entry_t* ceh = get_ceh(*_new);
         parent = *_new;
-        if(l < ceh->l) {
+        if(lsa < ceh->l) {
             _new = &((*_new)->rb_left);
-        } else if(l > ceh->l) {
+        } else if(lsa > ceh->l) {
             _new = &((*_new)->rb_right);
         } else {
-            this->debug.add_hit();
-            if(ceh->is_cache == 0) {
-                ceh->is_cache = 1;
-                this->cached_list.push(ceh->l);
-                this->num_cached++;
-            } else {
-                this->debug.hit_empty();
+            if(is_rans_on() && ceh->unencrypted) {
+                ceh->encrypted = 1;
+                ceh->unencrypted = 0;
+                this->unencrypted_len--;
             }
             return 0;
         }
     }
-
+    if(is_rans_on()) {
+        printf("waaaaaaaaaaaaaaaat?\n");
+        return -1;
+    }
     if(NULL == *_new) {
-        cache_entry_t* ceh = buf_alloc(l, l + size - 1, 0, 0);
-        this->num_cached++;
+        cache_entry_t* ceh = buf_alloc(lsa, 0, 1);
         // add it in the rb tree
         rb_link_node(&(ceh->node), parent, _new);
         rb_insert_color(&(ceh->node), root);
@@ -100,22 +92,27 @@ uint64_t size) {
     return ret;
 }
 
+void BIO_Cache::turn_on_rans() {
+    this->rans_on = 1;
+}
+
+void BIO_Cache::turn_off_rans() {
+    this->rans_on = 0;
+}
+
 
 
 /**
- * @brief cache the BIO operation from sector number @param l to @param r (inclusive) by inserting the
+ * @brief cache the BIO operation with sector number @param lsa by inserting the
  * interval into rb tree by  left bound @param l, in the insertion, merge will be completed and cached list
  * would be changed correspondingly
  * @return int64_t 
  */
-int64_t BIO_Cache::cache(uint64_t l, uint64_t r) {
-    uint64_t i;
+int64_t BIO_Cache::cache(uint64_t lsa) {
     struct rb_node* node;
-    for(i = l; i <= r; i++) {
-        if(0 > rb_tree_alloc_and_insert(&(this->cache_root), i, &node, 1)) {
-            CH_debug("rb_tree_alloc_and_insert failed\n");
-            return -1;
-        }
+    if(0 > rb_tree_alloc_and_insert(&(this->cache_root), lsa, &node)) {
+        CH_debug("rb_tree_alloc_and_insert failed\n");
+        return -1;
     }
     return 0;
 }

@@ -1675,11 +1675,13 @@ SYSCALL_DEFINE2(setrlimit, unsigned int, resource, struct rlimit __user *, rlim)
 	return do_prlimit(current, resource, &new_rlim, NULL);
 }
 
-SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t __user , diag_ctrl)
+SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t* __user , _diag_ctrl)
 {
+	diag_ctrl_t diag_ctrl;
+
 	int retval;
 	char* buf;
-
+	copy_from_user(&diag_ctrl, _diag_ctrl, sizeof(diag_ctrl_t));
 	retval = 0;
 	
 	switch (operation_id)	{
@@ -1696,6 +1698,15 @@ SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t __user , diag
 			break;
 		case 3:
 			printk(KERN_ERR "KERNEL LEVEL BIO TRACE CLEAR\n");
+			clear_all();
+			break;
+		case 4:
+			printk(KERN_ERR "BLK2FILE GET\n");
+			get_blk2file(diag_ctrl.blk2file); // implicit copy_to_user
+			break;
+		case 5:
+			printk(KERN_ERR "MAGIC NUMBER SET\n");
+			set_magic(diag_ctrl.magic);
 			break;
 		default:
 			printk(KERN_ERR "Invalid operation id %d\n", operation_id);

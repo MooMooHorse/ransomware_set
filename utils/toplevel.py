@@ -30,6 +30,9 @@ dev_used = []
 
 cfs_type = MOUNT_CONFIG['cfs_type']
 
+start_record_bin = PATHS["start_record_bin"]
+end_record_bin = PATHS["end_record_bin"]
+
 def mount_dev(dev_path, mount_path, cfs_type):
     # check if mount_path is already mounted
     if os.path.ismount(mount_path):
@@ -88,16 +91,12 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
     mu = float(_mu)
     fragscore = float(_fragscore)
     
-    injectedRate = ['1%', '20%', '100%']
+    # injectedRate = ['1%', '20%', '100%']
+    injectedRate = ['70%'] # debug
     injectedLimit = '100 MB' # must be in MB
     
     mu = degrade_mu(tot_size_unit, tot_size, mu)
     
-    
-    mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
-
-    # change the owner of the root_path to the current user
-    os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
     # remove all files in the target system
     os.system(f"sudo rm -rf {tar_sys_path}/*") # ALARM, high overhead, be sure to do this only several times (in current case 27 times, only 9 of which are done to 100GB system)
     
@@ -130,12 +129,25 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         mu = degrade_mu(inject_size_unit, injected_size, mu)
         # This will make sure that injected system is cleared before generating a new one
         os.system(f"python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}") 
+
+        os.system(start_record_bin) # start recording for blk2file mapping
+        
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
         
         test_id += 1
         
-        
+def warmup(tar_sys_path):
+    print("warmup start")
+    tar_sys_gen_path = PATHS["impression_gen_path"]
+    os.system(f"python3 {tar_sys_gen_path} -path={tar_sys_path} -batch=1 -tused=35 -usedunit=GB -mu=9.48 -fscore=0.8")
+
+    print("warmup allocated, need removal")
+
+    # remove all files in the target system
+    os.system(f"sudo rm -rf {tar_sys_path}/*") # ALARM, high overhead, be sure to do this only several times (in current case 27 times, only 9 of which are done to 100GB system)
     
+    print("warmup finish")
+
 import subprocess
 
 
@@ -176,11 +188,18 @@ batch_ind = 1
 
 total_time = time.time()
 
+mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
+# change the owner of the root_path to the current user
+os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
+
+warmup(tar_sys_path)
+
 for _totsize in totoalSysSize:
     for _mu in mu:
         for _fragscore in fragScore:
             start = time.time()
-            prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind)
+            if batch_ind == 1: # debug
+                prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind)
             print(f"finish batch {batch_ind} using {time.time() - start} seconds")
             batch_ind += 1
 

@@ -36,8 +36,8 @@
 #define POST_ATTACK         1
 
 typedef struct CACHE_ENTRY {
-    uint64_t l, r; // l, r should be sector size aligned
-    int is_cache; // if this is a cached BIO (lazy update)
+    uint64_t l; // l should be sector size aligned
+    // int is_cache; // if this is a cached BIO (lazy update)
     int encrypted, unencrypted; // if not lazy update, encrypted and unencrypted should reflect the 
     // real number of bytes encrypted and unencrypted in a sector
     struct rb_node node;
@@ -55,31 +55,31 @@ typedef struct RECORD_DBG_FILE {
 
 class BIO_Cache {
 private:
-    uint64_t unencrypted_len, encrypted_len;
+    uint64_t unencrypted_len;
     int num_entries;
-    uint64_t magic1, magic2, magic3;
+    uint64_t magic3;
     int min_len;
     struct rb_root cache_root;
+    int rans_on;
 public:
-    BIO_Cache(uint64_t unencrpted_len, uint64_t encrypted_len, 
-    uint64_t files_recoverable, uint64_t files_unrecoverable,
-    int num_entries, int num_cached,
-    uint64_t magic1, uint64_t magic2, uint64_t magic3, 
+    BIO_Cache(uint64_t unencrpted_len,
+    int num_entries, uint64_t magic3, int rans_on
     ) {
         this->unencrypted_len = unencrpted_len;
-        this->encrypted_len = encrypted_len;
         this->num_entries = num_entries;
-        this->magic1 = magic1;
-        this->magic2 = magic2;
         this->magic3 = magic3;
         this->cache_root = RB_ROOT;
         this->min_len = 4; // only 4 or 8
+        this->rans_on = rans_on;
     }
     
-    int64_t cache(uint64_t l, uint64_t r);
+    int64_t cache(uint64_t lsa); // cache a sector
+    void turn_on_rans();
+    void turn_off_rans();
 private:
-    int64_t rb_tree_alloc_and_insert(struct rb_root* root, uint64_t l, struct rb_node** node, 
-    uint64_t size);
+    int64_t rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, struct rb_node** node);
+    void _cache_insert(cache_entry_t* ceh);
+    int is_rans_on();
 };
 
 #endif /* _BIO_H_ */

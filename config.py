@@ -53,6 +53,11 @@ backup_dir = os.path.join(framework_dir, "backup_dir")
 log_dir = os.path.join(framework_dir, "logs")
 blktrace_dir = os.path.join(framework_dir, "blktrace")
 blktrace_result = os.path.join(log_dir, "blktrace")
+syscall_dir = os.path.join(cur_file_path, 'utils', 'syscall', 'bin')
+start_record_bin = os.path.join(syscall_dir, 'start')
+end_record_bin = os.path.join(syscall_dir, 'end')
+blk2file_bin = os.path.join(syscall_dir, 'blk2file')
+rans_path = os.path.join(cur_file_path, 'utils', 'preprocess.py')
 
 BATCH_BASE = 10000
 
@@ -68,7 +73,14 @@ PATHS = {
     "log_dir" : log_dir,
     "blktrace_dir" : blktrace_dir,
     "blktrace_result" : blktrace_result,
+    "syscall_dir" : syscall_dir,
+    "start_record_bin" : start_record_bin,
+    "end_record_bin" : end_record_bin,
+    "blk2file_bin" : blk2file_bin,
+    "rans_path" : rans_path,
 }
+
+
 
 LOG_NAME = {
     'test_info' : 'test_info.log',
@@ -147,10 +159,10 @@ def main():
             args.append(log_dir)
         elif arg.startswith("-ma"): # all magic numbers
             args.append(f"{magic1} {magic2} {magic3}")
-        elif arg.startswith("-xma"): # all magic numbers in hex
-            args.append(f"{hex(magic1)} {hex(magic2)} {hex(magic3)}")
-        elif arg.startswith("-en"): # encoding rule
-            args.append(f"{encoding_rule}")
+        elif arg.startswith("-sys"): # dump system call related bins' path
+            args.append(f"{start_record_bin} {end_record_bin} {blk2file_bin}")
+        elif arg.startswith("-rans"): # ransomware path
+            args.append(rans_path)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
