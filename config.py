@@ -51,6 +51,7 @@ tar_sys_path = os.path.join(framework_dir, "tar_sys")
 tar_sys_injected_path = os.path.join(tar_sys_path, "injected")
 backup_dir = os.path.join(framework_dir, "backup_dir")
 log_dir = os.path.join(framework_dir, "logs")
+test_id_path = os.path.join(log_dir, 'test_id') # current test id is stored in this file
 blktrace_dir = os.path.join(framework_dir, "blktrace")
 blktrace_result = os.path.join(log_dir, "blktrace")
 syscall_dir = os.path.join(cur_file_path, 'utils', 'syscall', 'bin')
@@ -71,6 +72,7 @@ PATHS = {
     "impression_gen_path": impression_gen_path,
     "impression_draw_path": impression_draw_path,
     "log_dir" : log_dir,
+    "test_id_path" : test_id_path,
     "blktrace_dir" : blktrace_dir,
     "blktrace_result" : blktrace_result,
     "syscall_dir" : syscall_dir,

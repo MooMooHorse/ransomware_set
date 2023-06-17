@@ -117,6 +117,11 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
     
     for injected_rate in injectedRate:
         injected_size, inject_size_unit = rate2size(injected_rate, tot_size, tot_size_unit, injectedLimit) # injected size in MB
+        test_id_path = PATHS["test_id_path"]
+
+        with open(test_id_path, 'w') as f:
+            f.write(str(test_id + BATCH_BASE))
+        
         log_dir = os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}")
         if not os.path.isdir(log_dir):
             os.mkdir(log_dir)
@@ -136,6 +141,8 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
 
         os.system(blk2file_bin)
+
+        os.system(end_record_bin)
         
         test_id += 1
         

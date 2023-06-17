@@ -1680,7 +1680,6 @@ SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t* __user , _di
 	diag_ctrl_t diag_ctrl;
 
 	int retval;
-	char* buf;
 	copy_from_user(&diag_ctrl, _diag_ctrl, sizeof(diag_ctrl_t));
 	retval = 0;
 	
@@ -1703,6 +1702,7 @@ SYSCALL_DEFINE2(diag_ctrl, unsigned int, operation_id, diag_ctrl_t* __user , _di
 		case 4:
 			printk(KERN_ERR "BLK2FILE GET\n");
 			get_blk2file(diag_ctrl.blk2file); // implicit copy_to_user
+			retval = get_blk2file_size();
 			break;
 		case 5:
 			printk(KERN_ERR "MAGIC NUMBER SET\n");

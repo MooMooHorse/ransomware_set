@@ -27,7 +27,6 @@ sys.path.append(parent_dir)
 
 from config import BOOT_CONFIG, MAGIC_NUM, PATHS, LOG_NAME
 from config import print_red
-from toplevel import test_id
 
 def add_magic_num_3(tar_sys_path, sync = False):
     """
@@ -101,6 +100,9 @@ def dump_trace_file(blktrace_dir, devices):
     Cloase the blktrace program and dump the trace to output file
     """
     import subprocess
+    test_id_path = PATHS["test_id_path"]
+    with open(test_id_path, "r") as f:
+        test_id = int(f.read())
     output_file = PATHS["blktrace_result"] + f"_{test_id}"
     cur_path = os.getcwd()
     os.chdir(blktrace_dir)
