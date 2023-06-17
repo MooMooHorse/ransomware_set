@@ -5,8 +5,10 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define MAX_DISKS           50
+#define MAGIC3      0x41
 
 typedef enum OPT {
     HINT = 0,

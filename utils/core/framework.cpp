@@ -69,6 +69,36 @@ public:
         // this->cache->debug.dump_dbg_file();
     }
 private:
+
+    // void replay() {
+    //     uint64_t secNum, secCount;
+    //     std::ifstream file(traceFilePath);
+    //     if (!file) {
+    //         std::cerr << "Failed to open trace file." << std::endl;
+    //         return;
+    //     }
+    //     std::string line;
+    //     while (std::getline(file, line)) {
+    //         std::istringstream iss(line);
+    //         std::vector<std::string> tokens;
+    //         std::string token;
+    //         while (iss >> token) {
+    //             tokens.push_back(token);
+    //         }
+    //         tokens.erase(std::remove(tokens.begin(), tokens.end(), ""), tokens.end());
+    //         // if tokens is not with 4 elements exactly (i.e. not a valid line), skip
+    //         if(tokens.size() != 4) continue;
+    //         // if token[3] does not include W, skip
+    //         if(tokens[3].find('W') == std::string::npos) continue;
+    //         secNum = std::stoull(tokens[1]);
+    //         secCount = std::stoull(tokens[2]) / 512;
+    //         if(secCount == 0) continue;
+    //         this->cache->cache(secNum, secNum + secCount - 1);
+    //     }
+
+    //     file.close();
+    // }
+
     /**
      * @brief we retreive filtered result from blk2file mapping, and then cache related (clean) 
      * blocks in RB tree.
@@ -92,6 +122,7 @@ private:
         printf("block numbers obtained : \n");
         while(std::getline(ss, args, ' ')) {
             this->cache->cache(std::stoll(args));
+            printf("%d ", std::stoi(args));
         }
     }
     // we run python3 utils/preprocess.py -run, and wait for it to complete.

@@ -1,12 +1,18 @@
-all: start end
-	rm -f *.o && rm -rf bin && mkdir bin && mv start end bin
+all: start end blk2file
+	rm -f *.o && rm -rf bin && mkdir bin && mv start end blk2file bin
 
 end: end.o sys.o
 	gcc sys.o end.o -o end
 
 start: start.o sys.o
 	gcc sys.o start.o -o start
+
+blk2file: blk2file.o sys.o
+	gcc sys.o blk2file.o -o blk2file
 	
+blk2file.o:
+	gcc -c blk2file.c -o blk2file.o
+
 end.o:
 	gcc -c end.c -o end.o
 start.o:

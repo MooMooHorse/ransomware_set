@@ -32,6 +32,7 @@ cfs_type = MOUNT_CONFIG['cfs_type']
 
 start_record_bin = PATHS["start_record_bin"]
 end_record_bin = PATHS["end_record_bin"]
+blk2file_bin = PATHS["blk2file_bin"]
 
 def mount_dev(dev_path, mount_path, cfs_type):
     # check if mount_path is already mounted
@@ -133,6 +134,8 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         os.system(start_record_bin) # start recording for blk2file mapping
         
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
+
+        os.system(blk2file_bin)
         
         test_id += 1
         
