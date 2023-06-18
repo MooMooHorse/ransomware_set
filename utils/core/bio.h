@@ -76,6 +76,7 @@ public:
     int64_t cache(uint64_t lsa); // cache a sector
     void turn_on_rans();
     void turn_off_rans();
+    int get_unencrypted(); // get the number of unencrypted sectors
 private:
     int64_t rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, struct rb_node** node);
     void _cache_insert(cache_entry_t* ceh);

@@ -100,6 +100,10 @@ void BIO_Cache::turn_off_rans() {
     this->rans_on = 0;
 }
 
+int BIO_Cache::get_unencrypted() {
+    return this->unencrypted_len;
+}
+
 
 
 /**

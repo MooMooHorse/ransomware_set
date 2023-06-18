@@ -12,6 +12,7 @@
 // the following system call(s) are defined by us
 #define TRACE_SYS_NUM           428 // the system call number of trace syscall 
 
+std::string config_path = "";
 int test_id;
 
 class TestingFramework {
@@ -57,6 +58,8 @@ public:
             return;
         }
         cache_BIO();
+
+        printf("number of unencrypted sectors %d\n", this->cache->get_unencrypted());
         
         // launch_ransomware();
         
@@ -170,7 +173,14 @@ int handle_args(int argc, char** argv) {
                 return -1;
             }
             test_id = std::stoi(_id);
-        } 
+        } else if(arg.find("-path=") != std::string::npos) {
+            std::string _path = arg.substr(arg.find("=") + 1);
+            if (_path == "") {
+                std::cerr << "Usage: ./core -path=<path>" << std::endl;
+                return -1;
+            }
+            config_path = _path;
+        }
     }
     return 0;
 }
@@ -178,7 +188,8 @@ int handle_args(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     handle_args(argc, argv);
-    std::string cmd = "python3 config.py -tfp -dd -log -sys -rans";
+    // python3 config.py -tfp -dd -log -sys -rans
+    std::string cmd = "python3 " + config_path + " -tfp -dd -log -ma -sys -rans";
     char buffer[128];
     std::string args = "";
     std::string disk_input = "";

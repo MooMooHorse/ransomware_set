@@ -6,11 +6,14 @@ import json
 
 framework_dir = "/home/h/rans_test"
 
-cur_file_path = os.path.dirname(os.path.realpath(__file__))
+cur_file_dir = os.path.dirname(os.path.realpath(__file__))
+config_file_path = os.path.realpath(__file__)
 
-impression_path = os.path.join(cur_file_path, 'impressions')
+impression_path = os.path.join(cur_file_dir, 'impressions')
 impression_gen_path = os.path.join(os.path.join(impression_path, 'utils'), 'gen.py')
 impression_draw_path = os.path.join(os.path.join(impression_path, 'utils'), 'draw.py')
+
+core_path = os.path.join(cur_file_dir, 'core')
 
 # a set of chosen file system types
 FS_EXT4 = 0
@@ -42,7 +45,6 @@ MOUNT_CONFIG = {
 BOOT_CONFIG = {
     "default_disk" : MOUNT_CONFIG['dev_list'][NORMAL_DISK],
     "backup_disk" : MOUNT_CONFIG['dev_list'][BACKUP_DISK],
-    "core_dir" : "core_dir",
 }
 
 
@@ -54,14 +56,14 @@ log_dir = os.path.join(framework_dir, "logs")
 test_id_path = os.path.join(log_dir, 'test_id') # current test id is stored in this file
 blktrace_dir = os.path.join(framework_dir, "blktrace")
 blktrace_result = os.path.join(log_dir, "blktrace")
-syscall_dir = os.path.join(cur_file_path, 'utils', 'syscall', 'bin')
+syscall_dir = os.path.join(cur_file_dir, 'utils', 'syscall', 'bin')
 start_record_bin = os.path.join(syscall_dir, 'start')
 end_record_bin = os.path.join(syscall_dir, 'end')
 blk2file_bin = os.path.join(syscall_dir, 'blk2file')
 clear_bin = os.path.join(syscall_dir, 'clear')
-rans_path = os.path.join(cur_file_path, 'utils', 'preprocess.py')
+rans_path = os.path.join(cur_file_dir, 'utils', 'preprocess.py')
 
-BATCH_BASE = 10000
+BATCH_BASE = 100000
 
 # A set of paths used in the framework
 PATHS = {
@@ -82,6 +84,7 @@ PATHS = {
     "blk2file_bin" : blk2file_bin,
     "clear_bin" : clear_bin,
     "rans_path" : rans_path,
+    "core_path" : core_path,
 }
 
 
@@ -148,7 +151,6 @@ def main():
     log_dir = PATHS["log_dir"]
     default_disk = BOOT_CONFIG["default_disk"]
     backup_disk = BOOT_CONFIG["backup_disk"]
-    core_dir = BOOT_CONFIG["core_dir"]
     magic1 = ((MAGIC_NUM["MAGIC_NUM1_01"] << 24) + (MAGIC_NUM["MAGIC_NUM1_02"] << 16) + 
                 (MAGIC_NUM["MAGIC_NUM1_03"] << 8) + (MAGIC_NUM["MAGIC_NUM1_04"]))
     magic2 = ((MAGIC_NUM["MAGIC_NUM2_01"] << 24) + (MAGIC_NUM["MAGIC_NUM2_02"] << 16) + 

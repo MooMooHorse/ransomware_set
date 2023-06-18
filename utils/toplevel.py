@@ -21,7 +21,7 @@ sys.path.append(parent_dir)
 
 # from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG, BATCH_BASE, LOG_NAME
-from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, BOOT_CONFIG
+from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, BOOT_CONFIG, config_file_path
 from preprocess import preprocess_tar_sys
 
 
@@ -34,6 +34,7 @@ start_record_bin = PATHS["start_record_bin"]
 end_record_bin = PATHS["end_record_bin"]
 blk2file_bin = PATHS["blk2file_bin"]
 clear_record_bin = PATHS["clear_bin"]
+core_path = PATHS["core_path"]
 
 def mount_dev(dev_path, mount_path, cfs_type):
     # check if mount_path is already mounted
@@ -141,9 +142,9 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
         
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
 
-        os.system(blk2file_bin)
-
         os.system(end_record_bin)
+        # print(core_path)
+        os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
 
         os.system(clear_record_bin)
         
@@ -206,7 +207,7 @@ mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 # change the owner of the root_path to the current user
 os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
 
-warmup(tar_sys_path)
+# warmup(tar_sys_path)
 
 for _totsize in totoalSysSize:
     for _mu in mu:
