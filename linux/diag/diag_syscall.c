@@ -55,11 +55,11 @@ int64_t rb_update(struct rb_root* root, uint64_t lpa, struct rb_node** node, uin
 
     if(NULL == *_new) {
         cache_entry_t* ceh = buf_alloc(lpa, is_encrypted);
-        diag_ctrl.blk2file_size++;
         if(NULL == ceh) {
             printk(KERN_ERR "buf_alloc failed at %s:%d\n", __FILE__, __LINE__);
             return -1;
         }
+        diag_ctrl.blk2file_size++;
         bio_cache.unencrypted_len += ceh->is_encrypted ? 0 : 1;
         bio_cache.encrypted_len += ceh->is_encrypted ? 1 : 0;
         // add it in the rb tree
@@ -189,11 +189,14 @@ int diag_proc_bio(struct bio* bio){
     ret = 0;
 
     for(v_idx = 0; v_idx < bio->bi_vcnt; v_idx++) {
-        virt_pg_addr = ((char*)page_address(bio->bi_io_vec[v_idx].bv_page) + bio->bi_io_vec[v_idx].bv_offset);
-
+        virt_pg_addr = ((char*)kmap(bio->bi_io_vec[v_idx].bv_page) + bio->bi_io_vec[v_idx].bv_offset);
+        if(virt_pg_addr == NULL) {
+            printk(KERN_ERR "kmap failed at %s:%d\n", __FILE__, __LINE__);
+            return -1;
+        }
         for(cnt = 0; cnt < bio->bi_io_vec[v_idx].bv_len / SEC_SIZE; cnt++) {
-            encrypted_len = get_encrpted(virt_pg_addr, cnt * SEC_SIZE);
-            unencrypted_len = get_unencrpted(virt_pg_addr, cnt * SEC_SIZE);
+            encrypted_len = get_encrpted(virt_pg_addr, cnt);
+            unencrypted_len = get_unencrpted(virt_pg_addr, cnt);
             
             /* sanity check 
                 * assumption here is before ransomware is turned on, no encrypted content should be detected
@@ -211,9 +214,10 @@ int diag_proc_bio(struct bio* bio){
             if(!encrypted_len && !unencrypted_len) {
                 continue;
             }
-            struct rb_node *node;
             spin_lock_irqsave(&bio_cache.lock, flags);
+            struct rb_node *node;
             if(-1 == rb_update(&bio_cache.cache_root, lsa++, &node, encrypted_len)) {
+                printk(KERN_ERR "rb_update failed at %s:%d\n", __FILE__, __LINE__);
                 spin_unlock_irqrestore(&bio_cache.lock, flags);
                 break;
             }

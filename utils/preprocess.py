@@ -45,6 +45,7 @@ def add_magic_num_3(tar_sys_path, sync = False):
                 f.write(bytes([magic_3]) * length)
                 # fsync the file if sync is enabled
                 if sync:
+                    f.flush()
                     os.fsync(f.fileno())
                     synced_num += 1
                 processed_files += 1
