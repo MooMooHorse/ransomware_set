@@ -15,6 +15,21 @@
 std::string config_path = "";
 int test_id;
 
+
+std::string pathJoin(const std::string& path1, const std::string& path2) {
+    if (path1.empty())
+        return path2;
+    if (path2.empty())
+        return path1;
+
+    char lastChar = path1.back();
+    if (lastChar != '/' && lastChar != '\\')
+        return path1 + '/' + path2;
+    else
+        return path1 + path2;
+}
+
+
 class TestingFramework {
 private:
     std:: string traceFilePath;
@@ -61,7 +76,7 @@ public:
 
         printf("number of unencrypted sectors %d\n", this->cache->get_unencrypted());
         
-        // launch_ransomware();
+        launch_ransomware();
         
         // cache_BIO();
         // this->cache->flush();
@@ -73,34 +88,35 @@ public:
     }
 private:
 
-    // void replay() {
-    //     uint64_t secNum, secCount;
-    //     std::ifstream file(traceFilePath);
-    //     if (!file) {
-    //         std::cerr << "Failed to open trace file." << std::endl;
-    //         return;
-    //     }
-    //     std::string line;
-    //     while (std::getline(file, line)) {
-    //         std::istringstream iss(line);
-    //         std::vector<std::string> tokens;
-    //         std::string token;
-    //         while (iss >> token) {
-    //             tokens.push_back(token);
-    //         }
-    //         tokens.erase(std::remove(tokens.begin(), tokens.end(), ""), tokens.end());
-    //         // if tokens is not with 4 elements exactly (i.e. not a valid line), skip
-    //         if(tokens.size() != 4) continue;
-    //         // if token[3] does not include W, skip
-    //         if(tokens[3].find('W') == std::string::npos) continue;
-    //         secNum = std::stoull(tokens[1]);
-    //         secCount = std::stoull(tokens[2]) / 512;
-    //         if(secCount == 0) continue;
-    //         this->cache->cache(secNum, secNum + secCount - 1);
-    //     }
+    void replay() {
+        uint64_t secNum, secCount;
+        uint64_t i;
+        std::ifstream file(traceFilePath);
+        if (!file) {
+            std::cerr << "Failed to open trace file." << std::endl;
+            return;
+        }
+        std::string line;
+        while (std::getline(file, line)) {
+            std::istringstream iss(line);
+            std::vector<std::string> tokens;
+            std::string token;
+            while (iss >> token) {
+                tokens.push_back(token);
+            }
+            tokens.erase(std::remove(tokens.begin(), tokens.end(), ""), tokens.end());
+            // if tokens is not with 5 elements exactly (i.e. not a valid line), skip
+            if(tokens.size() != 5) continue;
+            // if token[3] does not include W, skip
+            if(tokens[3].find('W') == std::string::npos) continue;
+            secNum = std::stoull(tokens[1]);
+            secCount = std::stoull(tokens[2]) / 512;
+            if(secCount == 0) continue;
+            for(i = 0; i < secCount; i++) this->cache->cache(secNum + i);
+        }
 
-    //     file.close();
-    // }
+        file.close();
+    }
 
     /**
      * @brief we retreive filtered result from blk2file mapping, and then cache related (clean) 
@@ -122,10 +138,10 @@ private:
         }
         pclose(pipe);
         std::stringstream ss(args);
-        printf("block numbers obtained : \n");
+        // printf("block numbers obtained : \n");
         while(std::getline(ss, args, ' ')) {
             this->cache->cache(std::stoll(args));
-            printf("%d ", std::stoi(args));
+            // printf("%d ", std::stoi(args));
         }
     }
     // we run python3 utils/preprocess.py -run, and wait for it to complete.
@@ -140,7 +156,7 @@ private:
             return;
         }
         while (std::fgets(buffer, sizeof(buffer), pipe) != NULL) {
-            args += buffer;
+            args += buffer; 
         }
         pclose(pipe);
 
@@ -188,7 +204,7 @@ int handle_args(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     handle_args(argc, argv);
-    // python3 config.py -tfp -dd -log -sys -rans
+    // python3 config.py -tfp -dd -log -ma -sys -rans
     std::string cmd = "python3 " + config_path + " -tfp -dd -log -ma -sys -rans";
     char buffer[128];
     std::string args = "";
@@ -216,10 +232,15 @@ int main(int argc, char** argv) {
     
     std::vector<std::string> arg_list;
     while(std::getline(ss, args, ' ')) {
+        // trim line change and extra space between the args 
+        args.erase(std::remove(args.begin(), args.end(), '\n'), args.end());
         arg_list.push_back(args);
     }
 
-    TestingFramework tf(arg_list[0], disk_names, arg_list[2], // trace path & device & log dir
+    std::string outputDir = "";
+    outputDir = pathJoin(arg_list[2], "logs_" + std::to_string(test_id));
+
+    TestingFramework tf(arg_list[0], disk_names, outputDir , // trace path & device & log dir
     std::stoull(arg_list[3]), std::stoull(arg_list[4]), std::stoull(arg_list[5]),  // 3 magic numbers
     arg_list[6], arg_list[7], arg_list[8],    // blk2file related binaries' path
     arg_list[9]

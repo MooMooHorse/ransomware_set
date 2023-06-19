@@ -62,8 +62,9 @@ end_record_bin = os.path.join(syscall_dir, 'end')
 blk2file_bin = os.path.join(syscall_dir, 'blk2file')
 clear_bin = os.path.join(syscall_dir, 'clear')
 rans_path = os.path.join(cur_file_dir, 'utils', 'preprocess.py')
+rans_exec_path = os.path.join(cur_file_dir, 'utils', 'cryptosoft', 'ransomware.py')
 
-BATCH_BASE = 100000
+BATCH_BASE = 100000 # a base to distinguish between config file for original system and injected system
 
 # A set of paths used in the framework
 PATHS = {
@@ -85,6 +86,7 @@ PATHS = {
     "clear_bin" : clear_bin,
     "rans_path" : rans_path,
     "core_path" : core_path,
+    'rans_exec_path' : rans_exec_path,
 }
 
 

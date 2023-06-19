@@ -80,8 +80,8 @@ def launch_blktrace(blktrace_dir, device_list):
     import subprocess
     # because of the stupid setting of blktrace, 
     # the tracefiles will be in current directory, so  we need to change directory to blktrace_dir
-    cur_path = os.getcwd()
-    os.chdir(blktrace_dir)
+    # cur_path = os.getcwd()
+    # os.chdir(blktrace_dir)
 
     command = ['sudo', 'blktrace']
     
@@ -94,34 +94,48 @@ def launch_blktrace(blktrace_dir, device_list):
     import time
     time.sleep(WAIT_TIME_SEC)
     
-    os.chdir(cur_path)
+    # os.chdir(cur_path)
 
 def dump_trace_file(blktrace_dir, devices):
     """
-    Cloase the blktrace program and dump the trace to output file
+    Cloase the blktrace program and dump the trace to output file.
+    The output will be in log director in file name blktrace_{test_id}.
+    For each line in the parsed file, the format is as follows:
+    time(ns) sector_number bytes operation_type device_number(major, minor)
+    operation_type : RWBS field, a (small) string (1-3 characters) 
+    
+    This is a small string containing at least one character ('R' for
+       read, 'W' for write, or 'D' for block discard operation), and
+       optionally either a 'B' (for barrier operations) or 'S' (for
+       synchronous operations).
+    Assumption :
+        The log directory exists
     """
     import subprocess
+    if not os.path.exists(PATHS["log_dir"]):
+        print_red(f"Log directory {PATHS['log_dir']} doesn't exist")
+        sys.exit(1)
+
     test_id_path = PATHS["test_id_path"]
     with open(test_id_path, "r") as f:
         test_id = int(f.read())
+
     output_file = PATHS["blktrace_result"] + f"_{test_id}"
-    cur_path = os.getcwd()
-    os.chdir(blktrace_dir)
+    # cur_path = os.getcwd()
+    # os.chdir(blktrace_dir)
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
     
     command = ['sudo', 'blkparse']
     
     for device in  devices:
-        command = command + devices.split('/')[1]
+        command = command + [device.split('/')[1]]
     
-    command = command + ['-f', '%t %S %N %3d\n', '-o', output_file]
+    command = command + ['-f', '%t %S %N %3d %D\n', '-o', output_file]
     process = subprocess.run(command, cwd = blktrace_dir)
-    # sleep for 0.01 seconds to make sure blktrace is shut down
-    import time
-    time.sleep(WAIT_TIME_SEC)
     
-    os.chdir(cur_path)
+    
+    # os.chdir(cur_path)
     
 
 def files_sync(tar_sys_path):
@@ -173,24 +187,21 @@ def _run_ransomware(blktrace_dir):
     Ransomware should be an executable file in the ransomware directory.
     It will only encrypte the files in the target system.
     """
-    # import subprocess
-    # cmd = RANS_OPTIONS["cmd"]
-    # print(f"Running ransomware... with command {cmd}")
-    # # current dir
-    # cur_dir = os.getcwd()
-    # print(f"Current dir is {cur_dir}")
-    
-    # rans_proc = subprocess.Popen(cmd.split(), cwd=cur_dir)
-    # # Launch strace with the ransomware command as a child process
+    import subprocess
+    cmd = 'python3 ' + PATHS['rans_exec_path'] + ' -mode=0'
+    print(f"Running ransomware... with command {cmd}")
+    os.system(cmd)
+    # rans_proc = subprocess.Popen(cmd.split())
+    # Launch strace with the ransomware command as a child process
     # rans_pid = rans_proc.pid
     # dbg_fname = f"{blktrace_dir}/strace.log"
     # strace_cmd = ["sudo","strace", "-o", dbg_fname, "-p", f"{rans_pid}"]
     # strace_proc = subprocess.Popen(strace_cmd)
-    # # Wait for the ransomware process to finish and obtain its exit status
+    # Wait for the ransomware process to finish and obtain its exit status
     # exit_status = rans_proc.wait()
-    # # Print the exit status
+    # Print the exit status
     # print(f"Ransomware process exited with status {exit_status}")
-    # # Terminate the strace process
+    # Terminate the strace process
     # subprocess.run(["sudo", "pkill", "strace"])
 
 def run_ransomware(tar_sys_path, blktrace_dir, device_list):
@@ -216,10 +227,12 @@ def main():
     """
     for arg in sys.argv[1:]:
         if arg.startswith("-run"):
-            blktrace_dir = BOOT_CONFIG["blktrace_dir"]
+            blktrace_dir = PATHS["blktrace_dir"]
             tar_sys_path = PATHS["tar_sys_path"]
             if os.path.exists(blktrace_dir):
                 shutil.rmtree(blktrace_dir)
+                os.mkdir(blktrace_dir)
+            else:
                 os.mkdir(blktrace_dir)
             run_ransomware(tar_sys_path, blktrace_dir, [BOOT_CONFIG["default_disk"]])
         else:
