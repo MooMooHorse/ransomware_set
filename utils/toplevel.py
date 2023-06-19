@@ -123,6 +123,9 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind):
 
         with open(test_id_path, 'w') as f:
             f.write(str(test_id + BATCH_BASE))
+
+        with open(PATHS["test_dir_path_file"], 'w') as f:
+            f.write(os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}"))
         
         log_dir = os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}")
         if not os.path.isdir(log_dir):

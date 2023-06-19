@@ -58,8 +58,6 @@ def clean_sys(inputfile_path):
                         # check if the parent path exists
                         if os.path.exists(path):
                             shutil.rmtree(path)
-                        else:
-                            print('Parent path does not exist: {}'.format(path))
                     elif line.startswith('Actuallogfile:'):
                         path = line.split(':')[1].strip().split(' ')[0].strip()
                         if os.path.exists(path):

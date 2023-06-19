@@ -14,6 +14,9 @@
 
 std::string config_path = "";
 std::string trace_info_name = "";
+std::string traceFilePath = "";
+std::string outputLogPath = "";
+std::string logDir = "";
 int test_id;
 
 
@@ -30,16 +33,33 @@ static std::string pathJoin(const std::string& path1, const std::string& path2) 
         return path1 + path2;
 }
 
+static std::string readPath(const std::string& path) {
+    std::ifstream file(path); 
+    if (!file) {
+        std::cerr << "Failed to open trace path file." << std::endl;
+        return "";
+    }
+    std::string line;
+    std::string traceFilePath = "";
+    while(std::getline(file, line)) {
+        line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+        file.close();
+        return line;
+    }
+    file.close();
+    return "";
+}
+
 // We pass into some certain flags to config_path and then we get 
 // unified configurations (to python scripts)
-static std::vector<std::string> get_path(std::string flags) {
-    std::string cmd = "python3 " + config_path + flags;
+static void get_path(std::string flags, std::string& path) {
+    std::string cmd = "python3 " + config_path + " " + flags;
     char buffer[128];
     std::string args = "";
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
         std::cerr << "Failed to run command" << std::endl;
-        return {};
+        return ;
     }
     while (std::fgets(buffer, sizeof(buffer), pipe) != NULL) {
         args += buffer;
@@ -54,13 +74,26 @@ static std::vector<std::string> get_path(std::string flags) {
         args.erase(std::remove(args.begin(), args.end(), '\n'), args.end());
         arg_list.push_back(args);
     }
-    return arg_list;
+    path = arg_list[0];
+}
+
+// return -1 on failure, 0 on success
+int dumpLog(const std::string& logPath, std::string dumpInfo) {
+    std::ofstream file(logPath, std::ios::trunc);
+    std::cerr << "Dumping log to " << logPath << std::endl;
+    if(!file) {
+        std::cerr << "Failed to open log file." << std::endl;
+        return -1;
+    }
+    file << dumpInfo;
+    file.close();
+    return 0;
 }
 
 
 class TestingFramework {
 private:
-    std:: string traceFilePath;
+    std:: string trace_path_file;
     std:: vector<std:: string> devices;
     std:: string outputDirPath;
     BIO_Cache* cache;
@@ -68,12 +101,13 @@ private:
     std:: string record_start, record_end, blk2file;
     std:: string rans_path;
 public:
-    TestingFramework(const std::string& traceFile, const std::vector<std::string>& devices, 
+    TestingFramework(const std::string trace_path_file, const std::vector<std::string>& devices, 
     const std::string& outputDir, const uint64_t& m1, const uint64_t& m2, const uint64_t& m3,
     const std::string& r_start, const std::string& r_end, const std::string& b2f,
     const std::string& rans_path
     )
-        : traceFilePath(traceFile), devices(devices), outputDirPath(outputDir), 
+        : trace_path_file(trace_path_file),
+        devices(devices), outputDirPath(outputDir), 
         magic1(m1), magic2(m2), magic3(m3),
         record_start(r_start), record_end(r_end), blk2file(b2f),
         rans_path(rans_path)
@@ -101,12 +135,16 @@ public:
             return;
         }
         cache_BIO();
-
-        printf("number of unencrypted sectors %d\n", this->cache->get_unencrypted());
+        std::string outputString = "";
+        outputString = "original=" + std::to_string(this->cache->get_unencrypted()) + "\n";
         this->cache->turn_on_rans();
         launch_ransomware();
-        // this->replay();
-        // this->cache->turn_off_rans();
+        this->replay();
+        this->cache->turn_off_rans();
+        outputString += "final=" + std::to_string(this->cache->get_unencrypted()) + "\n";
+        dumpLog(outputLogPath, outputString);
+        std::cout<<outputString<<std::endl;
+        this->cache->dump_clr_blks(outputLogPath);
         // cache_BIO();
         // this->cache->flush();
         // this->cache->report();
@@ -120,12 +158,14 @@ private:
     void replay() {
         uint64_t secNum, secCount;
         uint64_t i;
-        std::ifstream file(traceFilePath);
+        traceFilePath = readPath(this->trace_path_file);
+        std::ifstream file;
+        std::string line;
+        file.open(traceFilePath);
         if (!file) {
             std::cerr << "Failed to open trace file." << std::endl;
             return;
         }
-        std::string line;
         while (std::getline(file, line)) {
             std::istringstream iss(line);
             std::vector<std::string> tokens;
@@ -135,9 +175,13 @@ private:
             }
             tokens.erase(std::remove(tokens.begin(), tokens.end(), ""), tokens.end());
             // if tokens is not with 5 elements exactly (i.e. not a valid line), skip
-            if(tokens.size() != 5) continue;
+            if(tokens.size() != 5){
+                continue;
+            }
             // if token[3] does not include W, skip
-            if(tokens[3].find('W') == std::string::npos) continue;
+            if(tokens[3].find('W') == std::string::npos){
+                continue;
+            }
             secNum = std::stoull(tokens[1]);
             secCount = std::stoull(tokens[2]) / 512;
             if(secCount == 0) continue;
@@ -167,10 +211,8 @@ private:
         }
         pclose(pipe);
         std::stringstream ss(args);
-        // printf("block numbers obtained : \n");
         while(std::getline(ss, args, ' ')) {
             this->cache->cache(std::stoll(args));
-            // printf("%d ", std::stoi(args));
         }
     }
     // we run python3 utils/preprocess.py -run, and wait for it to complete.
@@ -269,7 +311,11 @@ int main(int argc, char** argv) {
     std::string outputDir = "";
     outputDir = pathJoin(arg_list[2], "logs_" + std::to_string(test_id));
 
-    trace_info_name = get_path(" -tinfo")[0];
+    get_path(" -tinfo", trace_info_name);
+    get_path(" -abcdir", logDir);
+    logDir = readPath(logDir);
+    get_path(" -out", outputLogPath);
+    outputLogPath = pathJoin(logDir, outputLogPath);
 
     TestingFramework tf(arg_list[0], disk_names, outputDir , // trace path & device & log dir
     std::stoull(arg_list[3]), std::stoull(arg_list[4]), std::stoull(arg_list[5]),  // 3 magic numbers

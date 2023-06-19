@@ -17,7 +17,7 @@ import os
 import shutil
 import sys
 
-WAIT_TIME_SEC = 0.1
+WAIT_TIME_SEC = 1
 
 # Get the parent directory path
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -88,6 +88,8 @@ def launch_blktrace(blktrace_dir, device_list):
     for device in device_list:
         command.append('-d')
         command.append(device)
+
+    print(command)
     
     process = subprocess.Popen(command, cwd = blktrace_dir)
     # wait for 0.01 seconds to make sure blktrace is launched
@@ -124,6 +126,10 @@ def dump_trace_file(blktrace_dir, devices):
 
 
     output_file = os.path.join(PATHS["log_dir"], f'logs_{test_id}', f'blktrace_{test_id}.log')
+
+    with open(PATHS["trace_path_file"], "w") as f:
+        f.write(output_file)
+        
     # cur_path = os.getcwd()
     # os.chdir(blktrace_dir)
     # first we shut down blktrace

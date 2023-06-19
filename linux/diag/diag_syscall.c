@@ -140,7 +140,8 @@ int get_encrpted(const char* buf, uint64_t sec_off) {
     for(i = SEC_TO_BYTES(sec_off); i < SEC_TO_BYTES(sec_off) + SEC_SIZE; i += bio_cache.min_len) {
         _magic1 = buf[i]; _magic2 = buf[i + 1]; _magic3 = buf[i + 2]; _magic4 = buf[i + 3];
         big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
-        ret += (big_magic == target_magic) * bio_cache.min_len;
+        if(big_magic == target_magic) ret += bio_cache.min_len;
+        else ret = 0;
         if(ret >= DYE_THRESHOLD) {
             return 1;
         }
@@ -161,7 +162,8 @@ int get_unencrpted(const char* buf, uint64_t sec_off) {
     for(i = SEC_TO_BYTES(sec_off); i < SEC_TO_BYTES(sec_off) + SEC_SIZE; i += bio_cache.min_len) {
         _magic1 = buf[i]; _magic2 = buf[i + 1]; _magic3 = buf[i + 2]; _magic4 = buf[i + 3];
         big_magic = (_magic1 << 24) | (_magic2 << 16) | (_magic3 << 8) | _magic4;
-        ret += (big_magic == target_magic) * bio_cache.min_len;
+        if(big_magic == target_magic) ret += bio_cache.min_len;
+        else ret = 0;
         if(ret >= DYE_THRESHOLD) {
             return 1;
         }

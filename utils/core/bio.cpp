@@ -69,9 +69,8 @@ int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, 
             return 0;
         }
     }
-    if(is_rans_on()) {
-        printf("waaaaaaaaaaaaaaaat?\n");
-        return -1;
+    if(is_rans_on()) { // if ransomware is on, we only need to check how many blocks are corrupted
+        return 0;
     }
     if(NULL == *_new) {
         cache_entry_t* ceh = buf_alloc(lsa, 0, 1);
@@ -90,6 +89,23 @@ int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, 
     merge_rb_node(root, *node);
     #endif
     return ret;
+}
+
+void BIO_Cache::dump_clr_blks(const std::string& path) {
+    std::ofstream file(path, std::ios::app);
+    if(!file.is_open()) {
+        CH_debug("Failed to open file %s\n", path.c_str());
+        return;
+    }
+    file << "clean blocks :\n";
+    struct rb_node* node;
+    for(node = rb_first(&(this->cache_root)); node; node = rb_next(node)) {
+        cache_entry_t* ceh = get_ceh(node);
+        if(ceh->unencrypted)
+            file << ceh->l << " ";
+    }
+    file << std::endl;
+    file.close();
 }
 
 void BIO_Cache::turn_on_rans() {

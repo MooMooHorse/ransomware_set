@@ -54,6 +54,7 @@ tar_sys_injected_path = os.path.join(tar_sys_path, "injected")
 backup_dir = os.path.join(framework_dir, "backup_dir")
 log_dir = os.path.join(framework_dir, "logs")
 test_id_path = os.path.join(log_dir, 'test_id') # current test id is stored in this file
+trace_path_file = os.path.join(log_dir, 'trace_path') # current trace path is stored in this file
 blktrace_dir = os.path.join(framework_dir, "blktrace")
 blktrace_result = os.path.join(log_dir, "blktrace")
 syscall_dir = os.path.join(cur_file_dir, 'utils', 'syscall', 'bin')
@@ -63,6 +64,7 @@ blk2file_bin = os.path.join(syscall_dir, 'blk2file')
 clear_bin = os.path.join(syscall_dir, 'clear')
 rans_path = os.path.join(cur_file_dir, 'utils', 'preprocess.py')
 rans_exec_path = os.path.join(cur_file_dir, 'utils', 'cryptosoft', 'ransomware.py')
+test_dir_path_file = os.path.join(log_dir, 'test_dir_path') 
 
 BATCH_BASE = 100000 # a base to distinguish between config file for original system and injected system
 
@@ -86,7 +88,9 @@ PATHS = {
     "clear_bin" : clear_bin,
     "rans_path" : rans_path,
     "core_path" : core_path,
-    'rans_exec_path' : rans_exec_path,
+    "rans_exec_path" : rans_exec_path,
+    "trace_path_file" : trace_path_file,
+    "test_dir_path_file" : test_dir_path_file,
 }
 
 
@@ -96,6 +100,9 @@ LOG_NAME = {
     'dye_info' : 'dye_info.log',
     'trace_info' : 'trace.log',
     'parse_err' : 'parse_err.log',
+    'rans_config' : 'rans_config.log',
+    'sys_config' : 'sys_config.log',
+    'out' : 'out.log',
 }
 
 # A set of parameters for the target system
@@ -150,7 +157,6 @@ def print_yellow(msg):
 
 def main():
     args = []
-    trace_log = os.path.join(PATHS["log_dir"], LOG_NAME["trace_info"])
     log_dir = PATHS["log_dir"]
     default_disk = BOOT_CONFIG["default_disk"]
     backup_disk = BOOT_CONFIG["backup_disk"]
@@ -162,7 +168,7 @@ def main():
     magic3 = MAGIC_NUM["MAGIC_NUM3"]
     for arg in sys.argv[1:]:
         if arg.startswith("-tfp"): # trace file path
-            args.append(f"{trace_log}")
+            args.append(trace_path_file)
         elif arg.startswith("-dd"): # dump default_disk
             args.append(f"{default_disk}")
         elif arg.startswith("-log"): # dump log directory
@@ -175,6 +181,10 @@ def main():
             args.append(rans_path)
         elif arg.startswith("-tinfo"):
             args.append(trace_info_log_name)
+        elif arg.startswith("-out"): # output log
+            args.append(LOG_NAME["out"])
+        elif arg.startswith("-abcdir"):
+            args.append(test_dir_path_file)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
