@@ -120,7 +120,10 @@ def dump_trace_file(blktrace_dir, devices):
     with open(test_id_path, "r") as f:
         test_id = int(f.read())
 
-    output_file = PATHS["blktrace_result"] + f"_{test_id}"
+    import logging 
+
+
+    output_file = os.path.join(PATHS["log_dir"], f'logs_{test_id}', f'blktrace_{test_id}.log')
     # cur_path = os.getcwd()
     # os.chdir(blktrace_dir)
     # first we shut down blktrace
@@ -129,10 +132,11 @@ def dump_trace_file(blktrace_dir, devices):
     command = ['sudo', 'blkparse']
     
     for device in  devices:
-        command = command + [device.split('/')[1]]
+        command = command + [device.split('/')[2]]
     
     command = command + ['-f', '%t %S %N %3d %D\n', '-o', output_file]
-    process = subprocess.run(command, cwd = blktrace_dir)
+    with open(os.path.join(PATHS["log_dir"], f'logs_{test_id}', LOG_NAME["parse_err"]), "w") as f:
+        process = subprocess.run(command, cwd = blktrace_dir, stderr = f)
     
     
     # os.chdir(cur_path)

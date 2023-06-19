@@ -95,6 +95,7 @@ LOG_NAME = {
     'test_info' : 'test_info.log',
     'dye_info' : 'dye_info.log',
     'trace_info' : 'trace.log',
+    'parse_err' : 'parse_err.log',
 }
 
 # A set of parameters for the target system
@@ -153,6 +154,7 @@ def main():
     log_dir = PATHS["log_dir"]
     default_disk = BOOT_CONFIG["default_disk"]
     backup_disk = BOOT_CONFIG["backup_disk"]
+    trace_info_log_name = LOG_NAME["trace_info"]
     magic1 = ((MAGIC_NUM["MAGIC_NUM1_01"] << 24) + (MAGIC_NUM["MAGIC_NUM1_02"] << 16) + 
                 (MAGIC_NUM["MAGIC_NUM1_03"] << 8) + (MAGIC_NUM["MAGIC_NUM1_04"]))
     magic2 = ((MAGIC_NUM["MAGIC_NUM2_01"] << 24) + (MAGIC_NUM["MAGIC_NUM2_02"] << 16) + 
@@ -171,6 +173,8 @@ def main():
             args.append(f"{start_record_bin} {end_record_bin} {blk2file_bin}")
         elif arg.startswith("-rans"): # ransomware path
             args.append(rans_path)
+        elif arg.startswith("-tinfo"):
+            args.append(trace_info_log_name)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

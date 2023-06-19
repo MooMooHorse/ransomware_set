@@ -13,10 +13,11 @@
 #define TRACE_SYS_NUM           428 // the system call number of trace syscall 
 
 std::string config_path = "";
+std::string trace_info_name = "";
 int test_id;
 
 
-std::string pathJoin(const std::string& path1, const std::string& path2) {
+static std::string pathJoin(const std::string& path1, const std::string& path2) {
     if (path1.empty())
         return path2;
     if (path2.empty())
@@ -27,6 +28,33 @@ std::string pathJoin(const std::string& path1, const std::string& path2) {
         return path1 + '/' + path2;
     else
         return path1 + path2;
+}
+
+// We pass into some certain flags to config_path and then we get 
+// unified configurations (to python scripts)
+static std::vector<std::string> get_path(std::string flags) {
+    std::string cmd = "python3 " + config_path + flags;
+    char buffer[128];
+    std::string args = "";
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) {
+        std::cerr << "Failed to run command" << std::endl;
+        return {};
+    }
+    while (std::fgets(buffer, sizeof(buffer), pipe) != NULL) {
+        args += buffer;
+    }
+    pclose(pipe);
+
+    std::stringstream ss(args);
+    
+    std::vector<std::string> arg_list;
+    while(std::getline(ss, args, ' ')) {
+        // trim line change and extra space between the args 
+        args.erase(std::remove(args.begin(), args.end(), '\n'), args.end());
+        arg_list.push_back(args);
+    }
+    return arg_list;
 }
 
 
@@ -75,9 +103,10 @@ public:
         cache_BIO();
 
         printf("number of unencrypted sectors %d\n", this->cache->get_unencrypted());
-        
+        this->cache->turn_on_rans();
         launch_ransomware();
-        
+        // this->replay();
+        // this->cache->turn_off_rans();
         // cache_BIO();
         // this->cache->flush();
         // this->cache->report();
@@ -161,11 +190,11 @@ private:
         pclose(pipe);
 
         // put the output of the python script into a file
-        std::ofstream file(outputDirPath + "/ransomware_output.txt");
+        std::ofstream file(pathJoin(outputDirPath,trace_info_name));
         file << args;
         file.close();
         std::cout << "Ransomware launched." << std::endl;
-        std::cout << "Output file: " << outputDirPath + "/ransomware_output.txt" << std::endl;
+        std::cout << "Output file: " << pathJoin(outputDirPath,trace_info_name) << std::endl;
     }
 
 };
@@ -239,6 +268,8 @@ int main(int argc, char** argv) {
 
     std::string outputDir = "";
     outputDir = pathJoin(arg_list[2], "logs_" + std::to_string(test_id));
+
+    trace_info_name = get_path(" -tinfo")[0];
 
     TestingFramework tf(arg_list[0], disk_names, outputDir , // trace path & device & log dir
     std::stoull(arg_list[3]), std::stoull(arg_list[4]), std::stoull(arg_list[5]),  // 3 magic numbers
