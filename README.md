@@ -10,7 +10,33 @@ img[alt~="center"] {
 
 # Ransomware Testing Framework
 
+---
 
+## Project Code Base Structure
+
+---
+
+### Configurations
+
+All configurations are in `config.py` file.
+
+`config.py` files are in 2 parts. 
+
+* Paths to different files (using absolute paths)
+* Functions to get configurations.
+
+---
+
+### Calling Trace
+
+* `run.py` wrapper
+* `utils/toplevel.py` initiate testing
+* kernel level tracing
+* `utils/core/*.cpp` Use a rb tree to record # clean blocks
+* `utils/preproecess.py` initiate ransomware and do `blktrace` and `blkparse`
+* `utils/cryptosoft/ransomware.py` run ransomware
+* `utils/core/*cpp` Update rb tree to calcuate final result (# clean blocks remaining)
+* `utils/toplevel.py` initiate another test
 
 ---
 
@@ -118,18 +144,13 @@ MAGIC number should be 8 bytes (to avoid collision) to help BIO layer gather mor
 
 ## Currently implemented
 
-* Target System & Databackup Generation
-* Fine-grained Access Control (via ACL) 
-* Fingerprinting Report
-* Ransomware Encryption
+* Tracing and Logging for EXT(2,3,4), XFS, F2FS, NTFS, BtrFS (without RAID) in BIO layers utilizing different existing tools.
+* Automation for different injected pattern and target systems.
+* A preliminary version of configurable and standardized ransomware.
 
 
 ---
 
 ## TO DO
 
-* BIO dump
-* Data backup
-  * consistency report
-  * security report (To discuss)
-* Propagation
+* Complete different features within ransomwares.
