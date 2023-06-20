@@ -21,6 +21,7 @@ FS_EXT4 = 0
 FS_NTFS = 1
 FS_F2FS = 2
 FS_EXT2 = 3
+FS_XFS = 4
 
 cfs_type = FS_EXT4
 
@@ -315,6 +316,8 @@ def get_batch_ind():
     Browse through impression_config_dir to get the largest batch index ( < BATCH BASE ).
     """
     batch_ind = 0
+    if not os.path.isdir(impression_config_dir):
+        return 1
     for config_file in os.listdir(impression_config_dir):
         if config_file.startswith('config_'):
             if int(config_file.split('_')[1]) < BATCH_BASE:
@@ -327,6 +330,8 @@ def get_test_id():
     The result is normalized by BATCH_BASE.
     """
     test_id = BATCH_BASE
+    if not os.path.isdir(log_dir):
+        return 1
     for log_file in os.listdir(log_dir):
         if log_file.startswith('logs_'):
             test_id = max(test_id, int(log_file.split('_')[1]))

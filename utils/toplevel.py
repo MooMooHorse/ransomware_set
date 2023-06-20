@@ -20,8 +20,9 @@ sys.path.append(parent_dir)
 
 # from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG, BATCH_BASE, LOG_NAME
-from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, BOOT_CONFIG, config_file_path
-from config import get_sys_config, get_test_id, get_batch_ind, MODE_SEQ, MODE_RAND
+from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, FS_XFS, BOOT_CONFIG, config_file_path
+from config import get_sys_config, get_test_id, get_batch_ind, get_rans_config, MODE_SEQ, MODE_RAND
+from config import MODE_FROM_SCRATCH, MODE_CONTINUE, dispatch_rans_config
 from preprocess import preprocess_tar_sys
 
 
@@ -49,11 +50,13 @@ def mount_dev(dev_path, mount_path, cfs_type):
         # mkfs.ext4
         os.system(f"y | sudo mkfs.ext4 {dev_path} && sudo mount -t ext4 {dev_path} {mount_path}")
     elif cfs_type == FS_NTFS:
-        os.system(f"y | sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
+        os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
     elif cfs_type == FS_F2FS:
-        os.system(f"y | sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
+        os.system(f"sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
     elif cfs_type == FS_EXT2:
-        os.system(f"y | sudo mkfs.ext2 {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
+        os.system(f"sudo mkfs.ext2 -f {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
+    elif cfs_type == FS_XFS:
+        os.system(f"sudo mkfs.xfs -f {dev_path} && sudo mount -t xfs {dev_path} {mount_path}")
         
 
     # dev_list.remove(dev_path)
@@ -119,41 +122,53 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
     
     injected_size, inject_size_unit = rate2size(injected_rate, tot_size, tot_size_unit, injectedLimit) # injected size in MB
 
-    with open(PATHS["test_id_path"], 'w') as f:
-        f.write(str(test_id + BATCH_BASE))
+    dispatch_rans_config(MODE_FROM_SCRATCH)
 
-    with open(PATHS["test_dir_path_file"], 'w') as f:
-        f.write(os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}"))
-    
-    log_dir = os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}")
-    if not os.path.isdir(log_dir):
-        os.mkdir(log_dir)
-    # remove all logs
-    os.system(f"sudo rm -rf {log_dir}/*")
-    # create log_dir/test_info
-    with open(os.path.join(log_dir, test_info_path), 'w') as f:
-        f.write(f"test_id={test_id + BATCH_BASE}\n")
-        f.write(f"tot_size={_totsize}\n")
-        f.write(f"mu={_mu}\n")
-        f.write(f"fragscore={_fragscore}\n")
-        f.write(f"injected_rate={injected_rate}\n")
-        f.write(f"injected_size={injected_size} {inject_size_unit}\n")
-    
-    mu = degrade_mu(inject_size_unit, injected_size, mu)
-    # This will make sure that injected system is cleared before generating a new one
-    os.system(f"python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}") 
+    while True:
+        _mode, _timeout, _blknum, _threads, _access = get_rans_config(MODE_RAND)
+        with open(PATHS["test_id_path"], 'w') as f:
+            f.write(str(test_id + BATCH_BASE))
 
-    os.system(start_record_bin) # start recording for blk2file mapping
-    
-    preprocess_tar_sys(injected_path, log_dir, 'garbage')
+        with open(PATHS["test_dir_path_file"], 'w') as f:
+            f.write(os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}"))
+        
+        log_dir = os.path.join(PATHS["log_dir"], f"logs_{test_id + BATCH_BASE}")
+        if not os.path.isdir(log_dir):
+            os.mkdir(log_dir)
+        # remove all logs
+        os.system(f"sudo rm -rf {log_dir}/*")
+        # create log_dir/test_info
+        with open(os.path.join(log_dir, test_info_path), 'w') as f:
+            f.write(f"test_id={test_id + BATCH_BASE}\n")
+            f.write(f"batch_id={batch_ind}\n")
+            f.write(f"tot_size={_totsize}\n")
+            f.write(f"mu={_mu}\n")
+            f.write(f"fragscore={_fragscore}\n")
+            f.write(f"injected_rate={injected_rate}\n")
+            f.write(f"injected_size={injected_size} {inject_size_unit}\n")
+            f.write(f"mode={_mode}\n")
+            f.write(f"timeout={_timeout}\n")
+            f.write(f"blknum={_blknum}\n")
+            f.write(f"threads={_threads}\n")
+            f.write(f"access={_access}\n")
+        
+        mu = degrade_mu(inject_size_unit, injected_size, mu)
+        # This will make sure that injected system is cleared before generating a new one
+        os.system(f"python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}") 
 
-    os.system(end_record_bin)
-    # print(core_path)
-    os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
+        os.system(start_record_bin) # start recording for blk2file mapping
+        
+        preprocess_tar_sys(injected_path, log_dir, 'garbage')
 
-    os.system(clear_record_bin)
-    
-    test_id += 1
+        os.system(end_record_bin)
+        # print(core_path)
+        os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
+
+        os.system(clear_record_bin)
+        
+        test_id += 1
+        if test_id > 2:
+            break # debug
         
 def warmup(tar_sys_path):
     print("warmup start")
@@ -181,7 +196,24 @@ def handle_flags(tar_sys_path, backup_dir_path):
             # clean_up_groups_users(f"{framework_dir}") # first remove all groups and users created by gen_tar_sys.py
             # os.system(f"sudo umount {tar_sys_path} && sudo umount {backup_dir_path} && sudo rm -rf rans_test")
             os.system(f"sudo umount {tar_sys_path} && sudo rm -rf {tar_sys_path}")
-            os.system(f"sudo rm -rf {framework_dir}/!'({config_dir_name})'")
+            items = os.listdir(framework_dir)
+
+            # Iterate through the items
+            for item in items:
+                item_path = os.path.join(framework_dir, item)
+                
+                # Skip the folder you want to keep
+                if item == config_dir_name:
+                    continue
+                
+                # Check if it's a file and remove it
+                if os.path.isfile(item_path):
+                    os.remove(item_path)
+                
+                # Check if it's a directory and remove it using shutil.rmtree
+                elif os.path.isdir(item_path):
+                    shutil.rmtree(item_path)
+                    
             # print(f"sudo rm -rf {framework_dir}/!\({config_dir_name}\)")
             os.system(f"python3 {impression_gen_path} --clean")
             sys.exit(0)

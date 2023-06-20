@@ -9,12 +9,14 @@ config_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 sys.path.append(config_dir)
 
-from config import PATHS
+from config import PATHS, LOG_NAME
+from config import print_red
 
-MODE_OVERWRITE = 0
-MODE_DELETECREATE = 1
-
-mode = MODE_OVERWRITE
+mode = 'O'
+timeout = 0
+blknum = 25000
+threads = 1
+access = 'R'
 
 
 class Chunk:
@@ -361,7 +363,7 @@ def create_all(tar_sys_path, chunk_set):
     fnames = chunk_set.get_names()
     for name in fnames:
         filepath = name
-        with open(filepath, "wb+") as f:
+        with open(filepath, "wb") as f:
             pass
 
 def main_overwrite():
@@ -382,20 +384,33 @@ def main_deletecreate():
     write_whole_files(chunk_set, tar_sys_path, sync = True)
     # encrypt_filenames(tar_sys_path)
 
-def handle_flags():
-    global mode
-    for arg in sys.argv[1:]:
-        if arg.startswith('-mode='):
-            mode = int(arg.split('=')[1])
-        else:
-            print('Invalid mode number')
-            exit(1)
+def read_attr():
+    global mode, timeout, blknum, threads, access
+    test_dir_path_file = PATHS['test_dir_path_file']
+    with open(test_dir_path_file, 'r') as f:
+        test_dir = f.read()
+    attr_file = os.path.join(test_dir, LOG_NAME['test_info'])
+    with open(attr_file, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            if line.startswith('mode='):
+                mode = line.split('=')[1]
+            elif line.startswith('timeout='):
+                timeout = int(line.split('=')[1])
+            elif line.startswith('blknum='):
+                blknum = int(line.split('=')[1])
+            elif line.startswith('threads='):
+                threads = int(line.split('=')[1])
+            elif line.startswith('access='):
+                access = line.split('=')[1]
+    print(f"mode={mode} timeout={timeout} blknum={blknum} threads={threads} access={access}")
+    return
 
 if __name__ == '__main__':
-    handle_flags()
-    if mode == MODE_OVERWRITE:
+    read_attr()
+    if mode == 'O':
         main_overwrite()
-    elif mode == MODE_DELETECREATE:
+    elif mode == 'D':
         main_deletecreate()
     else:
         print('Invalid mode number')
