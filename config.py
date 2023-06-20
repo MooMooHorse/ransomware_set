@@ -12,6 +12,7 @@ config_file_path = os.path.realpath(__file__)
 impression_path = os.path.join(cur_file_dir, 'impressions')
 impression_gen_path = os.path.join(os.path.join(impression_path, 'utils'), 'gen.py')
 impression_draw_path = os.path.join(os.path.join(impression_path, 'utils'), 'draw.py')
+impression_config_dir = os.path.join(impression_path, 'config')
 
 core_path = os.path.join(cur_file_dir, 'core')
 
@@ -65,6 +66,11 @@ clear_bin = os.path.join(syscall_dir, 'clear')
 rans_path = os.path.join(cur_file_dir, 'utils', 'preprocess.py')
 rans_exec_path = os.path.join(cur_file_dir, 'utils', 'cryptosoft', 'ransomware.py')
 test_dir_path_file = os.path.join(log_dir, 'test_dir_path') 
+config_dir = os.path.join(framework_dir, 'rans_config')
+rans_config_repos = os.path.join(config_dir, 'rans_repos')
+rans_config_tested = os.path.join(config_dir, 'rans_tested')
+sys_config_repos = os.path.join(config_dir, 'sys_repos')
+sys_config_tested = os.path.join(config_dir, 'sys_tested')
 
 BATCH_BASE = 100000 # a base to distinguish between config file for original system and injected system
 
@@ -91,6 +97,11 @@ PATHS = {
     "rans_exec_path" : rans_exec_path,
     "trace_path_file" : trace_path_file,
     "test_dir_path_file" : test_dir_path_file,
+    "config_dir" : config_dir,
+    "rans_config_repos" : rans_config_repos,
+    "rans_config_tested" : rans_config_tested,
+    "sys_config_repos" : sys_config_repos,
+    "sys_config_tested" : sys_config_tested,
 }
 
 
@@ -155,6 +166,172 @@ def print_yellow(msg):
     print(colors['yellow'] + msg + colors['reset'])
 
 
+
+
+MODE_FROM_SCRATCH = 0
+MODE_CONTINUE = 1
+def dispatch_rans_config(mode):
+    if mode == MODE_FROM_SCRATCH:
+        with open(rans_config_tested, 'w') as f:
+            pass
+        with open(rans_config_repos, 'w') as f:
+            MODE = ['O', 'D', 'S'] # overwrite, delte, shred
+            TIMEOUT = ['0', '10'] # 0 means no timeout 10 means 10 seconds
+            BLKNUM = ['25000', '50000'] # after this number of blocks, we trigger a timeout
+            THREADS = ['1', '8'] # number of threads
+            ACCESS  = ['R', 'S'] # access mode (random / sequential)
+            for _mode in MODE:
+                for _timeout in TIMEOUT:
+                    for _blknum in BLKNUM:
+                        for _threads in THREADS:
+                            for _access in ACCESS:
+                                f.write(f"{_mode} {_timeout} {_blknum} {_threads} {_access}\n")
+    else:
+        print("not supported yet")
+
+def dispatch_sys_config(mode):
+    if mode == MODE_FROM_SCRATCH:
+        with open(sys_config_tested, 'w') as f:
+            pass
+        with open(sys_config_repos, 'w') as f:
+            totoalSysSize = ['100 MB', '10 GB']
+            mu = ['4', '9.28', '17'] # to be tuned
+            fragScore = ['0', '0.5', '1']
+            injectedRate = ['1%', '20%', '100%']
+            for _totsize in totoalSysSize:
+                for _mu in mu:
+                    for _fragscore in fragScore:
+                        for injected_rate in injectedRate:
+                            f.write(f"{_totsize} {_mu} {_fragscore} {injected_rate}\n")
+    elif mode == MODE_CONTINUE:
+        tested = []
+        with open(sys_config_tested, 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                tested.append(line)
+        with open(sys_config_repos, 'w') as f:
+            totoalSysSize = ['100 MB', '10 GB']
+            mu = ['4', '9.28', '17'] # to be tuned
+            fragScore = ['0', '0.5', '1']
+            injectedRate = ['1%', '20%', '100%']
+            for _totsize in totoalSysSize:
+                for _mu in mu:
+                    for _fragscore in fragScore:
+                        for injected_rate in injectedRate:
+                            if f"{_totsize} {_mu} {_fragscore} {injected_rate}" not in tested:
+                                f.write(f"{_totsize} {_mu} {_fragscore} {injected_rate}\n")
+
+MODE_SEQ = 0
+MODE_RAND = 1
+
+def get_sys_config(mode):
+    """
+    Read from sys_config_repos to get a config, and put it into sys_config_tested.
+    We need to remove the config from sys_config_repos after we get it.
+    """
+    if mode == MODE_SEQ:
+        config = None
+        with open(sys_config_repos, 'r') as f:
+            lines = f.readlines()
+            if not lines:
+                return None, None, None, None
+            config = lines[0]
+        with open(sys_config_tested, 'a') as f:
+            f.write(config)
+        with open(sys_config_repos, 'w') as f:
+            for line in lines[1:]:
+                f.write(line)
+        # break config into a list
+        config = config.rstrip('\n')
+        config = config.split(' ')
+        return [config[0] + ' ' + config[1]] + config[2:]
+    elif mode == MODE_RAND:
+        config = None
+        import random
+        with open(sys_config_repos, 'r') as f:
+            lines = f.readlines()
+            if not lines:
+                return None, None, None, None
+            # randomly get a config
+            config = lines[random.randint(0, len(lines) - 1)]
+        with open(sys_config_tested, 'a') as f:
+            f.write(config)
+        with open(sys_config_repos, 'w') as f:
+            for line in lines:
+                if line != config:
+                    f.write(line)
+        # break config into a list
+        config = config.rstrip('\n')
+        config = config.split(' ')
+        return [config[0] + ' ' + config[1]] + config[2:]
+
+def get_rans_config(mode):
+    """
+    Read from rans_config_repos to get a config, and put it into rans_config_tested.
+    We need to remove the config from rans_config_repos after we get it.
+    """
+    if mode == MODE_SEQ:
+        config = None
+        with open(rans_config_repos, 'r') as f:
+            lines = f.readlines()
+            if not lines:
+                return None, None, None, None, None
+            config = lines[0]
+        with open(rans_config_tested, 'a') as f:
+            f.write(config)
+        with open(rans_config_repos, 'w') as f:
+            for line in lines[1:]:
+                f.write(line)
+        # break config into a list
+        config = config.rstrip('\n')
+        config = config.split(' ')
+
+        return config
+    elif mode == MODE_RAND:
+        config = None
+        import random
+        with open(rans_config_repos, 'r') as f:
+            lines = f.readlines()
+            if not lines:
+                return None, None, None, None, None
+            # randomly get a config
+            config = lines[random.randint(0, len(lines) - 1)]
+        with open(rans_config_tested, 'a') as f:
+            f.write(config)
+        with open(rans_config_repos, 'w') as f:
+            for line in lines:
+                if line != config:
+                    f.write(line)
+        # break config into a list
+        config = config.rstrip('\n')
+        config = config.split(' ')
+        return config
+
+def get_batch_ind():
+    """
+    Browse through impression_config_dir to get the largest batch index ( < BATCH BASE ).
+    """
+    batch_ind = 0
+    for config_file in os.listdir(impression_config_dir):
+        if config_file.startswith('config_'):
+            if int(config_file.split('_')[1]) < BATCH_BASE:
+                batch_ind = max(batch_ind, int(config_file.split('_')[1]))
+    return batch_ind + 1
+
+def get_test_id():
+    """
+    Browse through log_dir to get the largest test id.
+    The result is normalized by BATCH_BASE.
+    """
+    test_id = BATCH_BASE
+    for log_file in os.listdir(log_dir):
+        if log_file.startswith('logs_'):
+            test_id = max(test_id, int(log_file.split('_')[1]))
+    return test_id - BATCH_BASE + 1
+
 def main():
     args = []
     log_dir = PATHS["log_dir"]
@@ -185,10 +362,16 @@ def main():
             args.append(LOG_NAME["out"])
         elif arg.startswith("-abcdir"):
             args.append(test_dir_path_file)
+        elif arg.startswith("-dissys=scratch"):
+            dispatch_sys_config(MODE_FROM_SCRATCH)
+        elif arg.startswith("-disrans=scratch"):
+            dispatch_rans_config(MODE_FROM_SCRATCH)
         else:
             print("Invalid flag:", arg)
             sys.exit(1)
     return args
+
+
 
 if __name__ == "__main__":
     args = main()

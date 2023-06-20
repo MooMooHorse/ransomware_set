@@ -105,6 +105,13 @@ void BIO_Cache::dump_clr_blks(const std::string& path) {
             file << ceh->l << " ";
     }
     file << std::endl;
+    file << "corrupted blocks :\n";
+    for(node = rb_first(&(this->cache_root)); node; node = rb_next(node)) {
+        cache_entry_t* ceh = get_ceh(node);
+        if(ceh->encrypted)
+            file << ceh->l << " ";
+    }
+    file << std::endl;
     file.close();
 }
 
