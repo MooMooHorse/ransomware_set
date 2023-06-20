@@ -83,6 +83,8 @@ def launch_blktrace(blktrace_dir, device_list):
     # cur_path = os.getcwd()
     # os.chdir(blktrace_dir)
 
+    # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
+
     command = ['sudo', 'blktrace']
     
     for device in device_list:
@@ -130,10 +132,14 @@ def dump_trace_file(blktrace_dir, devices):
     with open(PATHS["trace_path_file"], "w") as f:
         f.write(output_file)
         
-    # cur_path = os.getcwd()
-    # os.chdir(blktrace_dir)
+    cur_path = os.getcwd()
+    os.chdir(blktrace_dir)
     # first we shut down blktrace
     os.system("sudo pkill blktrace")
+
+    # sleep for 1 second to make sure blktrace is shut down
+    import time
+    time.sleep(WAIT_TIME_SEC)
     
     command = ['sudo', 'blkparse']
     
@@ -141,11 +147,12 @@ def dump_trace_file(blktrace_dir, devices):
         command = command + [device.split('/')[2]]
     
     command = command + ['-f', '%t %S %N %3d %D\n', '-o', output_file]
-    with open(os.path.join(PATHS["log_dir"], f'logs_{test_id}', LOG_NAME["parse_err"]), "w") as f:
-        process = subprocess.run(command, cwd = blktrace_dir, stderr = f)
+    print(command, blktrace_dir)
+    # with open(os.path.join(PATHS["log_dir"], f'logs_{test_id}', LOG_NAME["parse_err"]), "w") as f:
+    process = subprocess.run(command, cwd = blktrace_dir)
     
     
-    # os.chdir(cur_path)
+    os.chdir(cur_path)
     
 
 def files_sync(tar_sys_path):

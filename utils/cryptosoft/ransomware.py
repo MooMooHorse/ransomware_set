@@ -242,7 +242,7 @@ def write_whole_files(chunk_set, tar_sys_path, sync = False):
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            with open(filepath, "r+b") as f:
+            with open(filepath, "wb") as f:
                 chunks = chunk_set.pop_all(filepath)
                 if chunks is None:
                     continue

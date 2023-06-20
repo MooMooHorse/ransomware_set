@@ -201,6 +201,9 @@ totoalSysSize = ['100 MB']
 mu = ['4', '9.28', '17'] # to be tuned
 fragScore = ['0', '0.5', '1']
 
+# debug
+mu = ['9.28']
+fragScore = ['0.7']
 
 batch_ind = 1
 
