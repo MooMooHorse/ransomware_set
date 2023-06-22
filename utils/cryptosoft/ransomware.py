@@ -19,6 +19,7 @@ threads = 1
 access = 'R'
 Nrthreads = 1
 Nwthreads = 1
+Yfsync = 'N'
 
 class NoneWrapper:
     """
@@ -83,7 +84,7 @@ class Stopper:
             self.stop_time = time.time()
 
 
-def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False):
+def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
     """
     Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
     The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
@@ -108,15 +109,23 @@ def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False):
                     f.seek(loff)
                     chunk = encrypt(f.read(chunk_size))
                     queue.put(Chunk(filepath, loff, len(chunk), chunk))
+            if shred:
+                with open(filepath, "r+b") as f:
+                    f.write(bytes([0] * flen))
             if rm:
                 with open(filepath, "wb") as f:
                     pass
+            if (shred or rm) and Yfsync == 'Y':
+                with open(filepath, "r+b") as f:
+                    f.flush()
+                    os.fsync(f.fileno())
+            
 
 
 
     
 
-def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False):
+def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
     """
     Basically the same as read_rand() but reads 
     the whole file at once(then divide into chunks in memory) instead of in chunks.
@@ -135,12 +144,20 @@ def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False):
                     chunk = encrypt(file_contents[loff:loff+chunk_size])
                     queue.put(Chunk(filepath, loff, len(chunk), chunk))
                     loff += len(chunk)
+            flen = os.path.getsize(filepath)
+            if shred:
+                with open(filepath, "r+b") as f:
+                    f.write(bytes([0] * flen))
             if rm:
                 with open(filepath, "wb") as f:
                     pass
+            if (shred or rm) and Yfsync == 'Y':
+                with open(filepath, "r+b") as f:
+                    f.flush()
+                    os.fsync(f.fileno())
 
 def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
-                      chunk_size = 4096, num_threads = 1, rm = False):
+                      chunk_size = 4096, num_threads = 1, rm = False, shred = False):
     """
     Read files from tar_sys_path and insert them into a queue.
     The access pattern is sequential.
@@ -167,9 +184,17 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,
             with flocks[filepath]:
                 with open(filepath, "rb") as f:
                     file_contents = f.read()
+                flen = os.path.getsize(filepath)
+                if shred:
+                    with open(filepath, "r+b") as f:
+                        f.write(bytes([0] * flen))
                 if rm:
                     with open(filepath, "wb") as f:
                         pass
+                if (shred or rm) and Yfsync == 'Y':
+                    with open(filepath, "r+b") as f:
+                        f.flush()
+                        os.fsync(f.fileno())
             if file_contents:
                 MAGIC_3 = file_contents[0]
             # Split the file contents into chunks and insert them into the ChunkSet
@@ -193,7 +218,7 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,
 
 
 def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, 
-                       chunk_size = 4096, num_threads = 1, rm = False):
+                       chunk_size = 4096, num_threads = 1, rm = False, shred = False):
     """
     Read files from tar_sys_path and insert them into a queue.
     The access pattern is random. To achieve this, we use 1 shuffle to randomize the loff_set.
@@ -233,9 +258,17 @@ def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
                             chunks.append(chunk)
                 for chunk in chunks:
                     queue.put(Chunk(filepath, loff, len(chunk), chunk))
+                flen = os.path.getsize(filepath)
+                if shred:
+                    with open(filepath, "r+b") as f:
+                        f.write(bytes([0] * flen))
                 if rm:
                     with open(filepath, "wb") as f:
                         pass
+                if (shred or rm) and Yfsync == 'Y':
+                    with open(filepath, "r+b") as f:
+                        f.flush()
+                        os.fsync(f.fileno())
 
             # Mark the filename as done
             fname_queue.task_done()
@@ -516,10 +549,60 @@ def main_deletecreate():
 
     flush_sync_files(tar_sys_path)
 
+def main_shredcreate():
+    tar_sys_path = PATHS["injected_path"]
+    queue = PriorityQueue()
+
+    flocks = {os.path.join(root, filename) : threading.Lock() 
+             for root, dirs, files in os.walk(tar_sys_path) 
+                for filename in files} 
+    queue = PriorityQueue()
+    fname_queue = Queue()
+
+    if access.split('/')[0].rstrip('\n') == 'R':
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+                                        chunk_size = 4096, num_threads = Nrthreads, 
+                                        rm = True, shred = True)
+    elif access.split('/')[0].rstrip('\n') == 'S':
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+                                    chunk_size = 4096, num_threads = Nrthreads,
+                                    rm = True, shred = True)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+
+    if access.split('/')[1].rstrip('\n') == 'R':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    elif access.split('/')[1].rstrip('\n') == 'S':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+
+    # wait for all the read threads to finish
+    fname_queue.join()
+    for i in range(len(rthreads)):
+        fname_queue.put(None)
+    for t in rthreads:
+        t.join()
+
+    # wait for all the write threads to finish
+    queue.join()
+    for i in range(len(wthreads)):
+        queue.put(NoneWrapper()) 
+    for t in wthreads:
+        t.join()
+
+    flush_sync_files(tar_sys_path)
+
 # below are a list of helper functions
 
 def read_attr():
-    global mode, timeout, blknum, threads, access
+    global mode, timeout, blknum, threads, access, Yfsync
     global Nrthreads, Nwthreads
     test_dir_path_file = PATHS['test_dir_path_file']
     with open(test_dir_path_file, 'r') as f:
@@ -540,6 +623,8 @@ def read_attr():
                 Nwthreads = int(threads.split('/')[1].rstrip('\n'))
             elif line.startswith('access='):
                 access = line.split('=')[1].rstrip('\n')
+            elif line.startswith('fsync='):
+                Yfsync = line.split('=')[1].rstrip('\n')
     print(f"mode={mode} timeout={timeout} blknum={blknum} threads={threads} access={access}")
     return
 
@@ -549,6 +634,8 @@ if __name__ == '__main__':
         main_overwrite()
     elif mode == 'D':
         main_deletecreate()
+    elif mode == 'S':
+        main_shredcreate()
     else:
         print('Invalid mode number')
         exit(1)

@@ -181,12 +181,14 @@ def dispatch_rans_config(mode):
             BLKNUM = ['25000/25000', '25000/50000', '50000/25000'] # after this number of blocks, we trigger a timeout
             THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
             ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
+            FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:
                         for _threads in THREADS:
                             for _access in ACCESS:
-                                f.write(f"{_mode} {_timeout} {_blknum} {_threads} {_access}\n")
+                                for _fsync in FSYNC:
+                                    f.write(f"{_mode} {_timeout} {_blknum} {_threads} {_access} {_fsync}\n")
     else:
         print("not supported yet")
 
@@ -279,7 +281,7 @@ def get_rans_config(mode):
         with open(rans_config_repos, 'r') as f:
             lines = f.readlines()
             if not lines:
-                return None, None, None, None, None
+                return None, None, None, None, None, None
             config = lines[0]
         with open(rans_config_tested, 'a') as f:
             f.write(config)
@@ -297,7 +299,7 @@ def get_rans_config(mode):
         with open(rans_config_repos, 'r') as f:
             lines = f.readlines()
             if not lines:
-                return None, None, None, None, None
+                return None, None, None, None, None, None
             # randomly get a config
             config = lines[random.randint(0, len(lines) - 1)]
         with open(rans_config_tested, 'a') as f:
