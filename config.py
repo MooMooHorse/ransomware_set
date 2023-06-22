@@ -177,10 +177,10 @@ def dispatch_rans_config(mode):
             pass
         with open(rans_config_repos, 'w') as f:
             MODE = ['O', 'D', 'S'] # overwrite, delte, shred
-            TIMEOUT = ['0', '10'] # 0 means no timeout 10 means 10 seconds
-            BLKNUM = ['25000', '50000'] # after this number of blocks, we trigger a timeout
-            THREADS = ['1', '8'] # number of threads
-            ACCESS  = ['R', 'S'] # access mode (random / sequential)
+            TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
+            BLKNUM = ['25000/25000', '25000/50000', '50000/25000'] # after this number of blocks, we trigger a timeout
+            THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
+            ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:

