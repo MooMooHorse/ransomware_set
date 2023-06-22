@@ -178,7 +178,7 @@ def dispatch_rans_config(mode):
         with open(rans_config_repos, 'w') as f:
             MODE = ['O', 'D', 'S'] # overwrite, delte, shred
             TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
-            BLKNUM = ['25000/25000', '25000/50000', '50000/25000'] # after this number of blocks, we trigger a timeout
+            BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
             THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
             ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
             FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)

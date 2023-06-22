@@ -169,8 +169,6 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
         os.system(clear_record_bin)
         
         test_id += 1
-        if test_id > 2:
-            break # debug
         
 def warmup(tar_sys_path):
     print("warmup start")

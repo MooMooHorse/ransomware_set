@@ -323,7 +323,7 @@ def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
         while True:
             # Get the next filename from the queue
             try:
-                chunk = queue.get()
+                chunk = queue.get(block = False)
                 if isinstance(chunk, NoneWrapper):
                     break
                 chunks.append(chunk)
@@ -358,8 +358,8 @@ def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
 
 def main_overwrite():
     tar_sys_path = PATHS['injected_path']
-    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
-    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 512, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 512, int(timeout.split('/')[1]))
     # file locks(flocks) are to protect against seek race conditions
     # Notice in python open will also move the file pointer, so 
     # seek, open should be protected by the same lock.
@@ -424,8 +424,8 @@ def main_overwrite():
     
 def main_deletecreate():
     tar_sys_path = PATHS["injected_path"]
-    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
-    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 512, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 512, int(timeout.split('/')[1]))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -482,8 +482,8 @@ def main_deletecreate():
 
 def main_shredcreate():
     tar_sys_path = PATHS["injected_path"]
-    rstopper = Stopper(int(blknum.split('/')[0]) * 4096, int(timeout.split('/')[0]))
-    wstopper = Stopper(int(blknum.split('/')[1]) * 4096, int(timeout.split('/')[1]))
+    rstopper = Stopper(int(blknum.split('/')[0]) * 512, int(timeout.split('/')[0]))
+    wstopper = Stopper(int(blknum.split('/')[1]) * 512, int(timeout.split('/')[1]))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -672,9 +672,7 @@ def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False)
                 with open(filepath, "r+b") as f:
                     f.flush()
                     os.fsync(f.fileno())
-            
-
-
+        
 
     
 
@@ -759,3 +757,4 @@ def create_all(tar_sys_path, chunk_set):
         filepath = name
         with open(filepath, "wb") as f:
             pass
+
