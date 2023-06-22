@@ -125,7 +125,7 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
     dispatch_rans_config(MODE_FROM_SCRATCH)
 
     while True:
-        _mode, _timeout, _blknum, _threads, _access, _fsync = get_rans_config(MODE_RAND)
+        _mode, _timeout, _blknum, _threads, _access, _fsync, _rwsplit = get_rans_config(MODE_RAND)
         with open(PATHS["test_id_path"], 'w') as f:
             f.write(str(test_id + BATCH_BASE))
 
@@ -152,6 +152,7 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
             f.write(f"threads={_threads}\n")
             f.write(f"access={_access}\n")
             f.write(f"fsync={_fsync}\n")
+            f.write(f"rwsplit={_rwsplit}\n")
         
         mu = degrade_mu(inject_size_unit, injected_size, mu)
         # This will make sure that injected system is cleared before generating a new one

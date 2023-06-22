@@ -155,7 +155,7 @@ colors = {
 }
 
 def print_red(msg):
-    print(colors['red'] + msg + colors['reset'])
+    print(colors['red'] + msg + colors['reset'], file=sys.stderr)
 
 def print_green(msg):
     print(colors['green'] + msg + colors['reset'])
@@ -182,13 +182,15 @@ def dispatch_rans_config(mode):
             THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
             ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
             FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
+            RWSPLIT = ['N' , 'Y'] # whether to split read and write
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:
                         for _threads in THREADS:
                             for _access in ACCESS:
                                 for _fsync in FSYNC:
-                                    f.write(f"{_mode} {_timeout} {_blknum} {_threads} {_access} {_fsync}\n")
+                                    for _rwsplit in RWSPLIT:
+                                        f.write(f"{_mode} {_timeout} {_blknum} {_threads} {_access} {_fsync} {_rwsplit}\n")
     else:
         print("not supported yet")
 
@@ -281,7 +283,7 @@ def get_rans_config(mode):
         with open(rans_config_repos, 'r') as f:
             lines = f.readlines()
             if not lines:
-                return None, None, None, None, None, None
+                return None, None, None, None, None, None, None
             config = lines[0]
         with open(rans_config_tested, 'a') as f:
             f.write(config)
@@ -299,7 +301,7 @@ def get_rans_config(mode):
         with open(rans_config_repos, 'r') as f:
             lines = f.readlines()
             if not lines:
-                return None, None, None, None, None, None
+                return None, None, None, None, None, None, None
             # randomly get a config
             config = lines[random.randint(0, len(lines) - 1)]
         with open(rans_config_tested, 'a') as f:

