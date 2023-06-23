@@ -126,6 +126,8 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
 
     while True:
         _mode, _timeout, _blknum, _threads, _access, _fsync, _rwsplit = get_rans_config(MODE_RAND)
+        if _mode is None or _timeout is None or _blknum is None or _threads is None or _access is None or _fsync is None or _rwsplit is None:
+            break
         with open(PATHS["test_id_path"], 'w') as f:
             f.write(str(test_id + BATCH_BASE))
 
