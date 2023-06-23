@@ -197,19 +197,16 @@ def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
             random.shuffle(loff_set)
             # Read the file contents into memory
             with flocks[filepath]:
-                chunks = []
                 with open(filepath, "rb") as f:
                     # randomize the loff_set
+                    if filepath.count(os.sep) == 6:
+                        print(filepath, loff_set)
                     for loff in loff_set:
                         f.seek(loff)
                         chunk = f.read(chunk_size)
                         stopper.try_stop(len(chunk))
-                        # chunk = encrypt(chunk)
-                        if chunk:
-                            chunk = bytes([255 - int(chunk[0])]*len(chunk)) # faster to test
-                            chunks.append(chunk)
-                for chunk in chunks:
-                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
+                        chunk = encrypt(chunk)
+                        queue.put(Chunk(filepath, loff, len(chunk), chunk))
                 flen = os.path.getsize(filepath)
                 if shred:
                     with open(filepath, "r+b") as f:
@@ -284,21 +281,23 @@ def write_seq_threaded(queue, tar_sys_path, flocks, stopper,
     def worker(queue):
         while True:
             # Get the next filename from the queue
-            try:
-                chunk = queue.get(block = False)
-                if isinstance(chunk, NoneWrapper):
-                    break
-                # Write the file contents to disk
-                with flocks[chunk.fpath]:
-                    with open(chunk.fpath, "r+b") as f:
-                        f.seek(chunk.loff)
-                        f.write(chunk.data)
-                        stopper.try_stop(len(chunk.data))
+            chunk = queue.get()
+            if isinstance(chunk, NoneWrapper):
+                # print_red("!")
+                break
+            # Write the file contents to disk
+            with flocks[chunk.fpath]:
+                with open(chunk.fpath, "r+b") as f:
+                    # get depth of fpath
+                    if chunk.fpath.count(os.sep) == 6:
+                        print(chunk.fpath, chunk.loff)
+                    f.seek(chunk.loff)
+                    # f.write(chunk.data)
+                    f.write(bytes([ord('C')]*len(chunk.data)))
+                    stopper.try_stop(len(chunk.data))
 
-                # Mark the filename as done
-                queue.task_done()
-            except:
-                pass
+            # Mark the filename as done
+            queue.task_done()
             
 
     # Create a pool of worker threads
@@ -322,24 +321,22 @@ def write_rand_threaded(queue, tar_sys_path, flocks, stopper,
         chunks = []
         while True:
             # Get the next filename from the queue
-            try:
-                chunk = queue.get(block = False)
-                if isinstance(chunk, NoneWrapper):
-                    break
-                chunks.append(chunk)
-                if len(chunks) == CHUNK_CACHE_SIZE:
-                    random.shuffle(chunks)
-                    flush_chunk_buf(chunks, flocks)
-                    stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
+            chunk = queue.get()
+            if isinstance(chunk, NoneWrapper):
+                break
+            chunks.append(chunk)
+            if len(chunks) == CHUNK_CACHE_SIZE:
+                random.shuffle(chunks)
+                flush_chunk_buf(chunks, flocks)
+                stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
 
-                # Mark the filename as done
-                queue.task_done()
-            except:
-                if chunks:
-                    random.shuffle(chunks)
-                    flush_chunk_buf(chunks, flocks)
-                    stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
-                pass
+            # Mark the filename as done
+            queue.task_done()
+
+        if chunks:
+            random.shuffle(chunks)
+            flush_chunk_buf(chunks, flocks)
+            stopper.try_stop(sum([len(chunk.data) for chunk in chunks]))
             
 
     # Create a pool of worker threads
@@ -393,7 +390,7 @@ def main_overwrite():
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+        wthreads = write_seq_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     else:
         print("------ ERR -------")
@@ -456,7 +453,7 @@ def main_deletecreate():
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+        wthreads = write_seq_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     else:
         print("------ ERR -------")
@@ -518,7 +515,7 @@ def main_shredcreate():
         wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     elif access.split('/')[1].rstrip('\n') == 'S':
-        wthreads = write_rand_threaded(queue, tar_sys_path, flocks, wstopper,
+        wthreads = write_seq_threaded(queue, tar_sys_path, flocks, wstopper,
                                        num_threads = Nwthreads)
     else:
         print("------ ERR -------")
@@ -571,7 +568,7 @@ def read_attr():
             elif line.startswith('rwsplit='):
                 rwsplit = line.split('=')[1].rstrip('\n')
     print(f"mode={mode} timeout={timeout} blknum={blknum}")
-    print(f"threads={threads} access={access} rwsplit={rwsplit}")
+    print(f"threads={threads} access={access} rwsplit={rwsplit} fsync={Yfsync}")
     # sanity check
     if mode != 'O' and mode != 'D' and mode != 'S':
         print_red(f"Invalid mode {mode}")
@@ -662,6 +659,7 @@ def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False)
                     f.seek(loff)
                     chunk = encrypt(f.read(chunk_size))
                     queue.put(Chunk(filepath, loff, len(chunk), chunk))
+
             if shred:
                 with open(filepath, "r+b") as f:
                     f.write(bytes([0] * flen))
