@@ -22,6 +22,7 @@ FS_NTFS = 1
 FS_F2FS = 2
 FS_EXT2 = 3
 FS_XFS = 4
+FS_BTRFS = 5
 
 cfs_type = FS_EXT4
 
@@ -183,6 +184,13 @@ def dispatch_rans_config(mode):
             ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
             FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
             RWSPLIT = ['N' , 'Y'] # whether to split read and write
+            # MODE = ['D']
+            # TIMEOUT = ['10/10']
+            # BLKNUM = ['50000/50000']
+            # THREADS = ['1/8']
+            # ACCESS  = ['S/R']
+            # FSYNC = ['Y']
+            # RWSPLIT = ['Y']
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:

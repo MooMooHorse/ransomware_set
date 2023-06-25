@@ -11,14 +11,33 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from config import PATHS
-from config import cfs_type, FS_EXT2, FS_EXT4, FS_F2FS, FS_XFS, FS_NTFS
+from config import cfs_type, FS_EXT2, FS_EXT4, FS_F2FS, FS_XFS, FS_NTFS, FS_BTRFS
 from config import print_red
 from config import LOG_NAME
 
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
-def plot_trace(trace_path):
+def _get_suffix():
+    if cfs_type == FS_EXT4:
+        suffix = '_ext4'
+    elif cfs_type == FS_EXT2:
+        suffix = '_ext2'
+    elif cfs_type == FS_F2FS:
+        suffix = '_f2fs'
+    elif cfs_type == FS_XFS:
+        suffix = '_xfs'
+    elif cfs_type == FS_NTFS:
+        suffix = '_ntfs'
+    elif cfs_type == FS_BTRFS:
+        suffix = '_btrfs'
+    else:
+        print_red("Unknown fs type to draw")
+        exit(1)
+
+    return suffix
+
+def plot_trace(input):
     """
     For each line in the parsed file, the format is as follows:
     time(ns) sector_number bytes operation_type device_number(major, minor)
@@ -29,6 +48,16 @@ def plot_trace(trace_path):
        optionally either a 'B' (for barrier operations) or 'S' (for
        synchronous operations).
     """
+    result_dir, log_num = input.split(',')
+    suffix = _get_suffix()
+    result_dir = result_dir + suffix
+    trace_path = os.path.join(result_dir, 'logs_' + log_num, 'blktrace_' + log_num + '.log')
+    TIME_LIMIT = 60
+    SEC_RANGE = 15 * 1024 * 1024 * 2 # 15 GB / 512 B
+    Xr = []
+    Yr = []
+    Xw = []
+    Yw = []
     # read the trace file
     with open(trace_path, 'r') as f:
         lines = f.readlines()
@@ -43,11 +72,31 @@ def plot_trace(trace_path):
             if (len(line) != 5) or ('R' not in line[3] and 'W' not in line[3]):
                 continue
             timeNs = int(line[0])
-            timeUs = timeNs / 1000
+            times = timeNs / 1000000
             sector_number = int(line[1])
             bytes = int(line[2])
             operation_type = line[3]
-            device_number = int(line[4])
+            device_number = line[4]
+            for i in range(bytes // 512):
+                if 'R' in operation_type:
+                    Xr.append(times)
+                    Yr.append(sector_number + i)
+                elif 'W' in operation_type:
+                    Xw.append(times)
+                    Yw.append(sector_number + i)
+    Xr = np.array(Xr)
+    Yr = np.array(Yr)
+    Xw = np.array(Xw)
+    Yw = np.array(Yw)
+    # plot the trace
+    plt.scatter(Xr, Yr, s = 0.1, c = 'r')
+    plt.scatter(Xw, Yw, s = 0.1, c = 'b')
+    plt.xlim(0, TIME_LIMIT)
+    plt.ylim(0, SEC_RANGE)
+    plt.xlabel('time(s)')
+    plt.ylabel('sector number')
+    plt.title('ransomware BIO trace')
+    plt.savefig(os.path.join(os.path.dirname(trace_path), 'trace.png'))
             
 
 def check_log_legal(log_id):
@@ -93,20 +142,13 @@ def check_log_legal(log_id):
             or fsync is None or rwsplit is None):
         return False
     return True
+
 def gather_data(dest_path, data_path = PATHS['log_dir']):
     """
     We first copy the data path to dest path.
     """
-    if cfs_type == FS_EXT4:
-        dest_path = dest_path + '_ext4'
-    elif cfs_type == FS_EXT2:
-        dest_path = dest_path + '_ext2'
-    elif cfs_type == FS_F2FS:
-        dest_path = dest_path + '_f2fs'
-    elif cfs_type == FS_XFS:
-        dest_path = dest_path + '_xfs'
-    else:
-        print_red("Unknown fs type to draw")
+    suffix = _get_suffix()
+    dest_path = dest_path + suffix
     
     if os.path.isdir(dest_path):
         shutil.rmtree(dest_path)
@@ -125,17 +167,7 @@ def gather_data(dest_path, data_path = PATHS['log_dir']):
 
 def put_into_csv(paths):
     data_path, csv_dir = paths.split(',')
-    suffix = ''
-    if cfs_type == FS_EXT4:
-        suffix = '_ext4'
-    elif cfs_type == FS_EXT2:
-        suffix = '_ext2'
-    elif cfs_type == FS_F2FS:
-        suffix = '_f2fs'
-    elif cfs_type == FS_XFS:
-        suffix = '_xfs'
-    else:
-        print_red("Unknown fs type to draw")
+    suffix = _get_suffix()
     data_path = data_path + suffix
     if not os.path.isdir(data_path):
         print_red("Data path does not exist")
@@ -222,15 +254,74 @@ def put_into_csv(paths):
             # write to csv
             f1.write(f"{mode},{rtimeout},{wtimeout},{rblknum},{wblknum},{rthreads},{wthreads},{raccess},{waccess},{fsync},{rwsplit},{CBR}\n")
 
+def plot_decision_tree(paths):
+    import numpy as np
+    from matplotlib import pyplot as plt
+
+    from sklearn.model_selection import train_test_split
+    from sklearn.datasets import load_iris
+    from sklearn.tree import DecisionTreeRegressor, plot_tree
+    from sklearn import tree
+    
+    csv_dir, decision_dir = paths.split(',')
+    suffix = _get_suffix()
+    csv_path = os.path.join(csv_dir, 'src' + suffix + '.csv')
+    decision_path = os.path.join(decision_dir, 'decision_tree' + suffix + '.png')
+    if not os.path.isfile(csv_path):
+        print_red("csv file does not exist")
+        return
+    X = []
+    y = []
+    feature_names = ['mode', 'rtimeout', 'wtimeout', 'rblknum', 'wblknum', 'rthreads', 'wthreads', 'raccess', 'waccess', 'fsync', 'rwsplit']
+    # read csv file
+    with open(csv_path, 'r') as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            line = line.rstrip('\n')
+            line = line.split(',')
+            # mode,rtimeout,wtimeout,rblknum,wblknum,rthreads,wthreads,raccess,waccess,fsync,rwsplit,CBR
+            # parse the line
+            if line[0] == 'O':
+                line[0] = 0
+            elif line[0] == 'D':
+                line[0] = 1
+            elif line[0] == 'S':
+                line[0] = 2
+            line[1] = int(line[1])
+            line[2] = int(line[2])
+            line[3] = int(line[3])
+            line[4] = int(line[4])
+            line[5] = int(line[5])
+            line[6] = int(line[6])
+            line[7] = int(line[7] == 'R')
+            line[8] = int(line[8] == 'R')
+            line[9] = int(line[9] == 'Y')
+            line[10] = int(line[10] == 'Y')
+            line[11] = float(line[11])
+            X.append(line[:-1])
+            y.append(line[-1])
+        X = np.array(X)
+        y = np.array(y)
+    clf = DecisionTreeRegressor(random_state=0, max_depth=3)
+    clf.fit(X, y)
+    plt.figure(figsize=(20, 20))
+    plot_tree(clf, filled=True, feature_names=feature_names)
+    plt.savefig(decision_path)
+
 def handle_flags():
     """
-    format of the flag: -gd=<dest_path> -csv=<data_path>,<csv_dir>
+    format of the flag: -gd=<dest_path> -csv=<data_path>,<csv_dir> 
+    -decision=<csv_dir>,<decision_dir> -trace=<result_dir>,<log_num>
     """
     for arg in sys.argv:
         if arg.startswith('-gd='): 
             gather_data(arg.split('=')[1].rstrip('\n'))
         elif arg.startswith('-csv='):
             put_into_csv(arg.split('=')[1].rstrip('\n'))
+        elif arg.startswith('-decision='):
+            plot_decision_tree(arg.split('=')[1].rstrip('\n'))
+        elif arg.startswith('-trace='):
+            plot_trace(arg.split('=')[1].rstrip('\n'))
     
 if __name__ == '__main__':
     handle_flags()

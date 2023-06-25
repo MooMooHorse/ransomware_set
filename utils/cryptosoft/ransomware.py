@@ -288,9 +288,6 @@ def write_seq_threaded(queue, tar_sys_path, flocks, stopper,
             # Write the file contents to disk
             with flocks[chunk.fpath]:
                 with open(chunk.fpath, "r+b") as f:
-                    # get depth of fpath
-                    if chunk.fpath.count(os.sep) == 6:
-                        print(chunk.fpath, chunk.loff)
                     f.seek(chunk.loff)
                     # f.write(chunk.data)
                     f.write(bytes([ord('C')]*len(chunk.data)))
