@@ -1,4 +1,4 @@
 tqdm
 matplotlib
 scipy
-sklearn
+scikit-learn
