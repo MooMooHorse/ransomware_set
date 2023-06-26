@@ -16,7 +16,7 @@ cp $DIR/debug/.config $DIR/linux/.config
 # check the number of CPUs we have
 NUM_CPUS=$(grep -c ^processor /proc/cpuinfo)
 # run make with the number of CPUs we have
-make -j$NUM_CPUS && sudo modinstall.sh
+make -j$NUM_CPUS && sudo bash modinstall.sh
 
 # go to DIR/ and run make
 cd $DIR/ && make

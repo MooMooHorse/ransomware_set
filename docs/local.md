@@ -56,6 +56,37 @@ img[alt~="center"] {
 
 From the raw data obtained by the previous method, we get $2304$ `ransomware parameter` $\rightarrow$ `recoverability of storage system` mapping for each storage system.
 
+---
+
+## Ransomware Parameters (Features)
+
+* mode (overwrite`O`, delete-create`D`, shred-create`S`)
+* \# threads 
+* access pattern (random`R`, sequential `S`)
+* fsync after read (`Y` / `N`)
+* read-write split (First read then write`Y` / read write happen concurrently`N`)
+* blknum (after reading / writing # blocks, we trigger a timeout )
+* timeout (the length of timeout in seconds)
+
+
+---
+
+## 2304 (minimum) Features for Ransomware
+
+Among these features, `threads`, `access pattern`, `blknum`, `timeout` can be different for read and write.
+* so there are 11 independent features in total
+
+At minimum we have 2304 **combinations** of feature, the minimum setting is configured as follows
+
+``` python
+MODE = ['O', 'D', 'S'] # overwrite, delte, shred
+TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
+BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
+THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
+ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
+FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
+RWSPLIT = ['N' , 'Y'] # whether to split read and write
+```
 
 ---
 

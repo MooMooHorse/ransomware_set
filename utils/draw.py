@@ -173,8 +173,6 @@ def put_into_csv(paths):
         return
     if not os.path.isdir(csv_dir):
         os.mkdir(csv_dir)
-    shutil.rmtree(csv_dir)
-    os.mkdir(csv_dir)
     # create src{suffix}.csv
     src_csv_path = os.path.join(csv_dir, 'src' + suffix + '.csv')
     with open(src_csv_path, 'w') as f:
@@ -265,6 +263,8 @@ def plot_decision_tree(paths):
     csv_dir, decision_dir = paths.split(',')
     suffix = _get_suffix()
     csv_path = os.path.join(csv_dir, 'src' + suffix + '.csv')
+    if not os.path.isdir(decision_dir):
+        os.mkdir(decision_dir)
     decision_path = os.path.join(decision_dir, 'decision_tree' + suffix + '.png')
     if not os.path.isfile(csv_path):
         print_red("csv file does not exist")
