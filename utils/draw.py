@@ -71,8 +71,7 @@ def plot_trace(input):
             line = [x for x in line if x != '']
             if (len(line) != 5) or ('R' not in line[3] and 'W' not in line[3]):
                 continue
-            timeNs = int(line[0])
-            times = timeNs / 1000000
+            times = float(line[0])
             sector_number = int(line[1])
             bytes = int(line[2])
             operation_type = line[3]

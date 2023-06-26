@@ -146,7 +146,7 @@ def dump_trace_file(blktrace_dir, devices):
     for device in  devices:
         command = command + [device.split('/')[2]]
     
-    command = command + ['-f', '%t %S %N %3d %D\n', '-o', output_file]
+    command = command + ['-f', '%T.%t %S %N %3d %D\n', '-o', output_file]
     print(command, blktrace_dir)
     # with open(os.path.join(PATHS["log_dir"], f'logs_{test_id}', LOG_NAME["parse_err"]), "w") as f:
     process = subprocess.run(command, cwd = blktrace_dir)

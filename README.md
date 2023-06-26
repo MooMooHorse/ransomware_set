@@ -10,8 +10,6 @@ img[alt~="center"] {
 
 # Ransomware Testing Framework
 
-Slides at [slides](https://github.com/MooMooHorse/ransomware_set/blob/main/README.pdf)
-
 ---
 
 ## Project Code Base Structure
