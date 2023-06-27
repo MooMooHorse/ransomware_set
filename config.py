@@ -177,20 +177,20 @@ def dispatch_rans_config(mode):
         with open(rans_config_tested, 'w') as f:
             pass
         with open(rans_config_repos, 'w') as f:
-            # MODE = ['O', 'D', 'S'] # overwrite, delte, shred
-            # TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
-            # BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
-            # THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
-            # ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
-            # FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
-            # RWSPLIT = ['N' , 'Y'] # whether to split read and write
-            MODE = ['S']
-            TIMEOUT = ['10/10']
-            BLKNUM = ['50000/50000']
-            THREADS = ['1/8']
-            ACCESS  = ['S/R']
-            FSYNC = ['Y']
-            RWSPLIT = ['Y']
+            MODE = ['S'] # overwrite, delte, shred
+            TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
+            BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
+            THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
+            ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
+            FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
+            RWSPLIT = ['N' , 'Y'] # whether to split read and write
+            # MODE = ['S']
+            # TIMEOUT = ['10/10']
+            # BLKNUM = ['50000/50000']
+            # THREADS = ['1/8']
+            # ACCESS  = ['S/R']
+            # FSYNC = ['Y']
+            # RWSPLIT = ['Y']
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:
