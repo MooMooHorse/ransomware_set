@@ -101,3 +101,46 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 
 ---
 
+## EXT4
+
+---
+
+![center h:1000 w:1000](../debug/decision_tree_ext4.png)
+
+---
+
+## F2FS
+
+
+---
+
+
+![center h:1000 w:1000](../debug/decision_tree_f2fs.png)
+
+---
+
+## NTFS
+
+---
+
+![center h:1000 w:1000](../debug/decision_tree_ntfs.png)
+
+---
+
+## XFS
+
+---
+
+![center h:1000 w:1000](../debug/decision_tree_xfs.png)
+
+---
+
+## BTRFS
+
+---
+
+![center h:1000 w:1000](../debug/decision_tree_btrfs.png)
+
+---
+
+
