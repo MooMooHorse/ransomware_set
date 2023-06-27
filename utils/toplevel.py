@@ -249,7 +249,7 @@ mount_dev(BOOT_CONFIG['default_disk'], tar_sys_path, cfs_type)
 os.system(f"sudo chown -R {os.getlogin()} {tar_sys_path}")
 
 # if you want to debug, comment warmup 
-# warmup(tar_sys_path)
+warmup(tar_sys_path)
 
 while True:
     _totsize, _mu, _fragscore, injected_rate = get_sys_config(MODE_RAND)
