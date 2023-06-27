@@ -90,13 +90,40 @@ RWSPLIT = ['N' , 'Y'] # whether to split read and write
 
 ---
 
-## Automated analysis : Decision Tree
+## Automated analysis : Decision Tree Regression
 
-It's hard to analyze 2304 mappings manually, because we have ~10 reansomware features, each of which could influence recoverability of storage system.
+It's hard to analyze 2304 samples (mappings) manually, because we have ~10 reansomware features, each of which could influence recoverability of storage system.
 
 * e.g. if we only have 1 feature (feature $A$) for a ransomware workload, then we can simply draw a `recoverability` against `feature` plot to see how feature $A$ influence the recoverability. 
 
 To conquer the problem brought by high dimension of input, we utilize the [Decision Tree](https://scikit-learn.org/stable/modules/tree.html) to gain insights.
+
+
+---
+
+## Decision Tree (cont'd)
+
+* Color of node represents the value
+
+* The $condition$ is listed first in a node, a $condition$ should be in form of $feature <= val$
+    * feature is mapped to interval [0, |feature| - 1] (e.g. mode = ['O', 'D', 'S'] is mapped to [0, 1, 2])
+    * |feature| means how many values a feature can be.
+
+* The value $x$(e.g. 0.91) of a node is the percentage of recoverable blocks  (e.g. 91% of blocks are recoverable).
+
+* MSE value evaluates regression model for each node
+
+* \# samples are also given to see how many samples meet $condition$
+
+---
+
+## Decision Tree (cont'd)
+
+* Decision tree here is binary tree.
+
+* Left son of the node means the $condition\ \text{is True}$
+
+* Right son of the node means the $condition\ \text{is False}$
 
 
 ---
@@ -106,6 +133,16 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 ---
 
 ![center h:1000 w:1000](../debug/decision_tree_ext4.png)
+
+---
+
+### Comments on EXT4
+
+* `mode` is a dominating factor that influences the recoverability.
+
+* During overwrite, EXT4 file system has 0 recoverability.
+
+* Delete and 
 
 ---
 

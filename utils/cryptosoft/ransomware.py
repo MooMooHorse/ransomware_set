@@ -140,10 +140,12 @@ def read_seq_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
                 if shred:
                     with open(filepath, "r+b") as f:
                         f.write(bytes([0] * flen))
+                        f.flush()
+                        os.fsync(f.fileno())
                 if rm:
                     with open(filepath, "wb") as f:
                         pass
-                if (shred or rm) and Yfsync == 'Y':
+                if (not shred and rm) and Yfsync == 'Y':
                     with open(filepath, "r+b") as f:
                         f.flush()
                         os.fsync(f.fileno())
@@ -211,10 +213,12 @@ def read_rand_threaded(tar_sys_path, queue, fname_queue, flocks, stopper,
                 if shred:
                     with open(filepath, "r+b") as f:
                         f.write(bytes([0] * flen))
+                        f.flush()
+                        os.fsync(f.fileno())
                 if rm:
                     with open(filepath, "wb") as f:
                         pass
-                if (shred or rm) and Yfsync == 'Y':
+                if (not shred and rm) and Yfsync == 'Y':
                     with open(filepath, "r+b") as f:
                         f.flush()
                         os.fsync(f.fileno())
