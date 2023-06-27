@@ -23,6 +23,7 @@ FS_F2FS = 2
 FS_EXT2 = 3
 FS_XFS = 4
 FS_BTRFS = 5
+FS_JBD   = 6
 
 cfs_type = FS_EXT4
 

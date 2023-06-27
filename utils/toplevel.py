@@ -20,7 +20,7 @@ sys.path.append(parent_dir)
 
 # from access import clean_up_groups_users
 from config import PATHS, TAR_SYS_PARAMS, MOUNT_CONFIG, BATCH_BASE, LOG_NAME
-from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, FS_XFS, BOOT_CONFIG, config_file_path
+from config import FS_EXT4, FS_NTFS, FS_F2FS, FS_EXT2, FS_XFS, FS_BTRFS, FS_JBD, BOOT_CONFIG, config_file_path
 from config import get_sys_config, get_test_id, get_batch_ind, get_rans_config, MODE_SEQ, MODE_RAND
 from config import MODE_FROM_SCRATCH, MODE_CONTINUE, dispatch_rans_config
 from preprocess import preprocess_tar_sys
@@ -57,7 +57,11 @@ def mount_dev(dev_path, mount_path, cfs_type):
         os.system(f"sudo mkfs.ext2 -f {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
     elif cfs_type == FS_XFS:
         os.system(f"sudo mkfs.xfs -f {dev_path} && sudo mount -t xfs {dev_path} {mount_path}")
-        
+    elif cfs_type == FS_BTRFS:
+        os.system(f"sudo mkfs.btrfs -f {dev_path} && sudo mount -t btrfs {dev_path} {mount_path}")
+    elif cfs_type == FS_JBD:
+        os.system(f"y | sudo mkfs.ext4 {dev_path} && sudo mount -o data=journal -t ext4 {dev_path} {mount_path}")
+       
 
     # dev_list.remove(dev_path)
     # dev_used.append(dev_path)
