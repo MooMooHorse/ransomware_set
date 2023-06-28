@@ -142,7 +142,7 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 
 * During overwrite, EXT4 file system has 0 recoverability.
 
-* Delete and 
+* Smaller timeout suggests smaller recoverability, (the recoverable blocks are more inclined to be reclaimed).
 
 ---
 
@@ -156,11 +156,23 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 
 ---
 
+* Logs can not protect the system from overwrite.
+
+* Logs can significantly increase recoverability under Delete-Create-Write workload
+
+---
+
 ## NTFS
 
 ---
 
 ![center h:1000 w:1000](../debug/decision_tree_ntfs.png)
+
+---
+
+* 0 recoverability from overwrite and shred-create-write workload
+
+* Higher recoverability than ext4 in Delete-create-write workload
 
 ---
 
@@ -172,6 +184,12 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 
 ---
 
+* 0 recoverability from overwrite and shred-create-write workload
+
+* Similiar recoverability to EXT4
+
+---
+
 ## BTRFS
 
 ---
@@ -180,4 +198,8 @@ To conquer the problem brought by high dimension of input, we utilize the [Decis
 
 ---
 
+* Very strong resilience to 3 modes
 
+* Extremely high recoverability to overwrite 
+
+* The recoverability is slightly impaired by shred-create-write workload.
