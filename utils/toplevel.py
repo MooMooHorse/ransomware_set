@@ -60,7 +60,7 @@ def mount_dev(dev_path, mount_path, cfs_type):
     elif cfs_type == FS_BTRFS:
         os.system(f"sudo mkfs.btrfs -f {dev_path} && sudo mount -t btrfs {dev_path} {mount_path}")
     elif cfs_type == FS_JBD:
-        os.system(f"y | sudo mkfs.ext4 {dev_path} && sudo mount -o data=journal -t ext4 {dev_path} {mount_path}")
+        os.system(f"y | sudo mkfs.ext4 {dev_path} -J size=512 && sudo mount -o data=journal -t ext4 {dev_path} {mount_path} && sudo LANG=C dumpe2fs {dev_path} | grep ^Journal")
        
 
     # dev_list.remove(dev_path)

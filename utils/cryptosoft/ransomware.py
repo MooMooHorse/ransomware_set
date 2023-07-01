@@ -571,7 +571,7 @@ def read_attr():
     print(f"mode={mode} timeout={timeout} blknum={blknum}")
     print(f"threads={threads} access={access} rwsplit={rwsplit} fsync={Yfsync}")
     # sanity check
-    if mode != 'O' and mode != 'D' and mode != 'S':
+    if mode != 'O' and mode != 'D' and mode[0] != 'S':
         print_red(f"Invalid mode {mode}")
         exit(1)
     if rwsplit != 'Y' and rwsplit != 'N':
@@ -594,166 +594,9 @@ if __name__ == '__main__':
         main_overwrite()
     elif mode == 'D':
         main_deletecreate()
-    elif mode == 'S':
-        main_shredcreate()
+    elif mode[0] == 'S':
+        for i in range(0,int(mode[1:])): # shred # times
+            main_shredcreate()
     else:
         print('Invalid mode number')
         exit(1)
-
-# Below are legacy functions (not currently used)
-
-def encrypt_filenames(tar_sys_path):
-    """ legacy
-        For all the files in tar_sys_path, encrypt the filenames by reverting the bytes
-        that is, byte = ~byte
-    """
-    # Get a list of all files in the tar_sys_path
-    files = os.listdir(tar_sys_path)
-
-    # Loop through the files
-    for file_name in files:
-        # Get the full path of the file
-        file_path = os.path.join(tar_sys_path, file_name)
-
-        # Check if the file is a regular file
-        if os.path.isfile(file_path):
-            # Encrypt the file name by reverting each byte
-            encrypted_name = ''.join(chr(~ord(c) & 0xff) for c in file_name)
-
-            # Rename the file with the encrypted file name
-            os.rename(file_path, os.path.join(tar_sys_path, encrypted_name))
-
-
-
-def encrpt_all(chunk_set, tar_sys_path):
-    """ legacy
-    Encrypt all the files in tar_sys_path by calling encrypt function in ChunkSet class.
-    """
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            chunk_set.encrpt(filepath)
-
-
-def read_rand(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
-    """ legacy
-    Read files from tar_sys_path and insert them into chunk_set which is a class consisting of a dictionary of chunks.
-    The ChunkSet is indexed by fpath and each fpath is mapped to a list of chunks.
-    This function blocks unlike threaded prefixed functions.
-    @rm determines whether we need to remove the file 
-    and create an empty one after reading it.
-    """
-    
-
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            # Get the file length first
-            flen = os.path.getsize(os.path.join(root, filename))
-            
-            filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
-                loff_set = [i for i in range(0, flen, chunk_size)]
-                # randomize the loff_set
-                import random
-                random.shuffle(loff_set)
-                for loff in loff_set:
-                    f.seek(loff)
-                    chunk = encrypt(f.read(chunk_size))
-                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
-
-            if shred:
-                with open(filepath, "r+b") as f:
-                    f.write(bytes([0] * flen))
-            if rm:
-                with open(filepath, "wb") as f:
-                    pass
-            if (shred or rm) and Yfsync == 'Y':
-                with open(filepath, "r+b") as f:
-                    f.flush()
-                    os.fsync(f.fileno())
-        
-
-    
-
-def read_whole_file(tar_sys_path, queue, chunk_size = 4096, rm = False, shred = False):
-    """ legacy
-    Basically the same as read_rand() but reads 
-    the whole file at once(then divide into chunks in memory) instead of in chunks.
-    This function blocks unlike threaded prefixed functions.
-    @rm determines whether we need to remove the file 
-    and create an empty one after reading it.
-    """
-
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            with open(filepath, "rb") as f:
-                file_contents = f.read()
-                loff = 0
-                while loff < len(file_contents):
-                    chunk = encrypt(file_contents[loff:loff+chunk_size])
-                    queue.put(Chunk(filepath, loff, len(chunk), chunk))
-                    loff += len(chunk)
-            flen = os.path.getsize(filepath)
-            if shred:
-                with open(filepath, "r+b") as f:
-                    f.write(bytes([0] * flen))
-            if rm:
-                with open(filepath, "wb") as f:
-                    pass
-            if (shred or rm) and Yfsync == 'Y':
-                with open(filepath, "r+b") as f:
-                    f.flush()
-                    os.fsync(f.fileno())
-
-
-
-def write_rand(queue, tar_sys_path):
-    """ legacy
-    Note : Important - This function must be followed by a BLOCKED read function. 
-    Meaning nothing will go to queue
-    Write the encrypted chunks in chunk_set back to tar_sys_path.
-    """
-    import random
-    CHUNK_CACHE_SIZE = 100
-    chunks = []
-    while not queue.empty():
-        chunks.append(queue.get())
-        if len(chunks) == CHUNK_CACHE_SIZE:
-            random.shuffle(chunks)
-            flush_chunk_buf(chunks)
-    random.shuffle(chunks)
-    flush_chunk_buf(chunks)
-
-
-def write_whole_files(queue, tar_sys_path):
-    """ legacy
-    Note : Important - This function must be followed by a BLOCKED read function. 
-    Meaning nothing will go to queue
-    For each file, we first assemble the chunks then write the whole file back to disk.
-    """
-    while not queue.empty():
-        chunk = queue.get()
-        with open(chunk.fpath, "r+b") as f:
-            f.seek(chunk.loff)
-            f.write(chunk.data)
-
-def delete_all(tar_sys_path):
-    """ legacy
-    Delete all the files in tar_sys_path.
-    """
-    for root, dirs, files in os.walk(tar_sys_path):
-        for filename in files:
-            filepath = os.path.join(root, filename)
-            os.remove(filepath)
-            
-def create_all(tar_sys_path, chunk_set):
-    """ legacy
-    Get keys from chunk set (a set of file names) then we create those files in tar_sys_path as empty files.
-    """
-    fnames = chunk_set.get_names()
-    for name in fnames:
-        filepath = name
-        with open(filepath, "wb") as f:
-            pass
-

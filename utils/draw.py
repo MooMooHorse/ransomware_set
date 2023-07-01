@@ -277,23 +277,6 @@ def overwrite_csv(paths):
             line = line.split(',')
             # mode,rtimeout,wtimeout,rblknum,wblknum,rthreads,wthreads,raccess,waccess,fsync,rwsplit,CBR
             # parse the line
-            if line[0] == 'O':
-                line[0] = 0
-            elif line[0] == 'D':
-                line[0] = 1
-            elif line[0] == 'S':
-                line[0] = 2
-            line[1] = int(line[1])
-            line[2] = int(line[2])
-            line[3] = int(line[3])
-            line[4] = int(line[4])
-            line[5] = int(line[5])
-            line[6] = int(line[6])
-            line[7] = int(line[7] == 'R')
-            line[8] = int(line[8] == 'R')
-            line[9] = int(line[9] == 'Y')
-            line[10] = int(line[10] == 'Y')
-            line[11] = float(line[11])
             cache[(line[0], line[1], line[2], line[3], line[4], line[5], line[6], line[7], line[8], line[9], line[10])] = line[11]
 
     with open(src_csv_path, 'w') as f:
@@ -440,6 +423,7 @@ def handle_flags():
     """
     format of the flag: -gd=<dest_path> -csv=<data_path>,<csv_dir> 
     -decision=<csv_dir>,<decision_dir> -trace=<result_dir>,<log_num>
+    -overwrite=<data_path>,<csv_dir>
     """
     for arg in sys.argv:
         if arg.startswith('-gd='): 
@@ -450,6 +434,10 @@ def handle_flags():
             plot_decision_tree(arg.split('=')[1].rstrip('\n'))
         elif arg.startswith('-trace='):
             plot_trace(arg.split('=')[1].rstrip('\n'))
+        elif arg.startswith('-overwrite='):
+            overwrite_csv(arg.split('=')[1].rstrip('\n'))
     
+
 if __name__ == '__main__':
     handle_flags()
+
