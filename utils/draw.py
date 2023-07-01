@@ -398,7 +398,7 @@ def plot_decision_tree(paths):
                 line[0] = 0
             elif line[0] == 'D':
                 line[0] = 1
-            elif line[0] == 'S':
+            elif line[0][0] == 'S':
                 line[0] = 2
             line[1] = int(line[1])
             line[2] = int(line[2])
