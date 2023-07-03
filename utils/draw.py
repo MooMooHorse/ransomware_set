@@ -15,10 +15,15 @@ from config import cfs_type, FS_EXT2, FS_EXT4, FS_F2FS, FS_XFS, FS_NTFS, FS_BTRF
 from config import print_red
 from config import LOG_NAME
 
+suffix = None
+
 # Add the parent directory to sys.path
 sys.path.append(parent_dir)
 
 def _get_suffix():
+    global suffix
+    if not (suffix is None):
+        return suffix
     if cfs_type == FS_EXT4:
         suffix = '_ext4'
     elif cfs_type == FS_EXT2:
@@ -438,6 +443,9 @@ def handle_flags():
             plot_trace(arg.split('=')[1].rstrip('\n'))
         elif arg.startswith('-overwrite='):
             overwrite_csv(arg.split('=')[1].rstrip('\n'))
+        elif arg.startswith('-suffix='):
+            global suffix
+            suffix = arg.split('=')[1].rstrip('\n')
     
 
 if __name__ == '__main__':
