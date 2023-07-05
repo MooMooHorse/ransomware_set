@@ -710,6 +710,7 @@ int f2fs_get_block(struct dnode_of_data *dn, pgoff_t index)
 	struct inode *inode = dn->inode;
 
 	if (f2fs_lookup_extent_cache(inode, index, &ei)) {
+		printk(KERN_ERR "heyyyyyy!");
 		dn->data_blkaddr = ei.blk + index - ei.fofs;
 		return 0;
 	}

@@ -25,7 +25,7 @@ FS_XFS = 4
 FS_BTRFS = 5
 FS_JBD   = 6
 
-cfs_type = FS_JBD
+cfs_type = FS_F2FS
 
 NORMAL_DISK = 0
 BACKUP_DISK = 1
@@ -178,7 +178,7 @@ def dispatch_rans_config(mode):
         with open(rans_config_tested, 'w') as f:
             pass
         with open(rans_config_repos, 'w') as f:
-            MODE = ['S3'] # overwrite, delte, shred
+            MODE = ['S2'] # overwrite, delte, shred
             TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
             BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
             THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads

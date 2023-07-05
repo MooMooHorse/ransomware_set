@@ -1,0 +1,20 @@
+Journal features:         journal_64bit journal_checksum_v3
+Journal size:             256M
+Journal length:           65536
+Journal sequence:         0x000001cf
+Journal start:            1160
+Journal checksum type:    crc32c
+Journal checksum:         0xa9c36acc
+
+Journal starts at block 1160, transaction 463
+Found expected sequence 463, type 1 (descriptor block) at block 1160
+Found expected sequence 463, type 1 (descriptor block) at block 1414
+Found expected sequence 463, type 1 (descriptor block) at block 1668
+Found expected sequence 463, type 1 (descriptor block) at block 1922
+Found expected sequence 463, type 1 (descriptor block) at block 2176
+Found expected sequence 463, type 1 (descriptor block) at block 2430
+Found expected sequence 463, type 1 (descriptor block) at block 2684
+Found expected sequence 463, type 2 (commit block) at block 2784
+Found expected sequence 464, type 1 (descriptor block) at block 2785
+Found expected sequence 464, type 2 (commit block) at block 2789
+No magic number at block 2790: end of journal.

@@ -11,7 +11,7 @@ parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(parent_dir)
 
 from config import PATHS
-from config import cfs_type, FS_EXT2, FS_EXT4, FS_F2FS, FS_XFS, FS_NTFS, FS_BTRFS
+from config import cfs_type, FS_EXT2, FS_EXT4, FS_F2FS, FS_XFS, FS_NTFS, FS_BTRFS, FS_JBD
 from config import print_red
 from config import LOG_NAME
 
@@ -31,6 +31,8 @@ def _get_suffix():
         suffix = '_ntfs'
     elif cfs_type == FS_BTRFS:
         suffix = '_btrfs'
+    elif cfs_type == FS_JBD:
+        suffix = '_jbd'
     else:
         print_red("Unknown fs type to draw")
         exit(1)
@@ -396,7 +398,7 @@ def plot_decision_tree(paths):
                 line[0] = 0
             elif line[0] == 'D':
                 line[0] = 1
-            elif line[0] == 'S':
+            elif line[0][0] == 'S':
                 line[0] = 2
             line[1] = int(line[1])
             line[2] = int(line[2])
