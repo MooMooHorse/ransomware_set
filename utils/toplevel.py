@@ -169,11 +169,12 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
         preprocess_tar_sys(injected_path, log_dir, 'garbage')
 
         os.system(end_record_bin)
-        # print(core_path)
+        
+        os.system(blk2file_bin)
         # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
-        os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
+        # os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
 
-        os.system(clear_record_bin)
+        # os.system(clear_record_bin)
         
         test_id += 1
         

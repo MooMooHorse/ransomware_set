@@ -17,7 +17,8 @@ int main() {
         filenames[i] = (char*)malloc(sizeof(char) * MAX_FNAME_LEN);
     }
     int num_blocks = get_blocks(blocks, MAX_BLCOKS);
-    get_filenames(filenames, MAX_FILES);
-    dump_blocks_f2fs(blocks, num_blocks, (const char**)filenames);
+    int num_files = get_filenames(filenames, MAX_FILES);
+    std::cout << "num_blocks: " << num_blocks << " " << "num_files: " << num_files << std::endl;
+    dump_blocks_f2fs(blocks, num_blocks, (const char**)filenames, num_files);
     return 0;
 }

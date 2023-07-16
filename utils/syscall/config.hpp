@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -18,14 +19,33 @@
 
 #include "sys.h"
 
+void dbg_dump_filenames(char** filenames, int limit) {
+    for(int i = 0; i < limit; i++) {
+        std::cout << filenames[i] << std::endl;
+    }
+}
+
 // get all test files' names
-void get_filenames(char** filenames, int limit) {
+int get_filenames(char** filenames, int limit) {
     // get the path of this file
-    std::string path = __FILE__;
+    std::string path;
+    // read link /proc/self/exe
+    char buf[PATH_MAX];
+    int len = readlink("/proc/self/exe", buf, sizeof(buf));
+    if(len == -1) {
+        perror("readlink");
+        exit(1);
+    }
+    buf[len] = '\0';
+    path = buf;
+    // use 
     int path_len = path.length();
     while(path[path_len] != '/' && path_len) path_len--; // bin
+    path_len--;
     while(path[path_len] != '/' && path_len) path_len--; // syscall
+    path_len--;
     while(path[path_len] != '/' && path_len) path_len--; // utils
+    path_len--;
     while(path[path_len] != '/' && path_len) path_len--; // ransomware_set
     if(!path_len) {
         perror("Illegal binary path");
@@ -59,6 +79,7 @@ void get_filenames(char** filenames, int limit) {
     }
 
     pclose(fp);
+    return i;
 }
 
 // get all blocks of the files
@@ -70,6 +91,7 @@ int get_blocks(uint64_t* blocks, int limit) {
     for(int i = 0; i < ctrl.blk2file_size; i++) {
         blocks[i] = ctrl.blk2file[i];
     }
+    std::cout << "blk2file_size: " << ctrl.blk2file_size << std::endl;
     return ctrl.blk2file_size;
 }
 
