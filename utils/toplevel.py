@@ -159,11 +159,11 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
             f.write(f"access={_access}\n")
             f.write(f"fsync={_fsync}\n")
             f.write(f"rwsplit={_rwsplit}\n")
-        
+          
         mu = degrade_mu(inject_size_unit, injected_size, mu)
         # This will make sure that injected system is cleared before generating a new one
         os.system(f"python3 {tar_sys_gen_path} -path={injected_path} -batch={test_id + BATCH_BASE} -tused={injected_size} -usedunit={inject_size_unit} -mu={mu} -fscore={fragscore}") 
-
+        
         os.system(start_record_bin) # start recording for blk2file mapping
         
         preprocess_tar_sys(injected_path, log_dir, 'garbage')

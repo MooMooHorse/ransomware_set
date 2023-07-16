@@ -13,6 +13,7 @@ impression_path = os.path.join(cur_file_dir, 'impressions')
 impression_gen_path = os.path.join(os.path.join(impression_path, 'utils'), 'gen.py')
 impression_draw_path = os.path.join(os.path.join(impression_path, 'utils'), 'draw.py')
 impression_config_dir = os.path.join(impression_path, 'config')
+impression_log_dir = os.path.join(impression_path, 'logs')
 
 core_path = os.path.join(cur_file_dir, 'core')
 
@@ -25,7 +26,7 @@ FS_XFS = 4
 FS_BTRFS = 5
 FS_JBD   = 6
 
-cfs_type = FS_EXT4
+cfs_type = FS_F2FS
 
 NORMAL_DISK = 0
 BACKUP_DISK = 1
@@ -86,6 +87,7 @@ PATHS = {
     "impression_path": impression_path,
     "impression_gen_path": impression_gen_path,
     "impression_draw_path": impression_draw_path,
+    "impression_log_dir": impression_log_dir,
     "log_dir" : log_dir,
     "test_id_path" : test_id_path,
     "blktrace_dir" : blktrace_dir,
@@ -178,20 +180,20 @@ def dispatch_rans_config(mode):
         with open(rans_config_tested, 'w') as f:
             pass
         with open(rans_config_repos, 'w') as f:
-            MODE = ['S'] # overwrite, delte, shred
-            TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
-            BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
-            THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
-            ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
-            FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
-            RWSPLIT = ['N' , 'Y'] # whether to split read and write
-            # MODE = ['S']
-            # TIMEOUT = ['10/10']
-            # BLKNUM = ['50000/50000']
-            # THREADS = ['1/8']
-            # ACCESS  = ['S/R']
-            # FSYNC = ['Y']
-            # RWSPLIT = ['Y']
+            # MODE = ['S'] # overwrite, delte, shred
+            # TIMEOUT = ['0/0', '0/10', '10/0', '10/10'] # 0 means no timeout 10 means 10 seconds
+            # BLKNUM = ['50000/50000', '50000/100000', '100000/50000'] # after this number of blocks, we trigger a timeout
+            # THREADS = ['1/1', '1/8', '8/1', '8/8'] # number of threads
+            # ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
+            # FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
+            # RWSPLIT = ['N' , 'Y'] # whether to split read and write
+            MODE = ['S']
+            TIMEOUT = ['10/10']
+            BLKNUM = ['50000/50000']
+            THREADS = ['1/8']
+            ACCESS  = ['S/R']
+            FSYNC = ['Y']
+            RWSPLIT = ['Y']
             for _mode in MODE:
                 for _timeout in TIMEOUT:
                     for _blknum in BLKNUM:
@@ -350,6 +352,18 @@ def get_test_id():
             test_id = max(test_id, int(log_file.split('_')[1]))
     return test_id - BATCH_BASE + 1
 
+def get_test_file_names():
+    with open(test_id_path, 'r') as f:
+        test_id = int(f.readline().strip())
+        with open(os.path.join(impression_log_dir,'log-' + str(test_id)), 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                fpath = line.split(' ')[4]
+                fname = fpath.split('/')[-1].rstrip('\n')
+                if len(fname) > 0:
+                    print(fname)
+            
+
 def main():
     args = []
     log_dir = PATHS["log_dir"]
@@ -384,6 +398,8 @@ def main():
             dispatch_sys_config(MODE_FROM_SCRATCH)
         elif arg.startswith("-disrans=scratch"):
             dispatch_rans_config(MODE_FROM_SCRATCH)
+        elif arg.startswith("-getfilenames"):
+            get_test_file_names()
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

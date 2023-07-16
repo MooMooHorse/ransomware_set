@@ -177,7 +177,7 @@ def preprocess_tar_sys(tar_sys_path, blktrace_dir, device):
     dye_info_path = LOG_NAME['dye_info']
     # files_sync(tar_sys_path)
     # launch_blktrace(blktrace_dir, device)
-    add_magic_num_1_2(tar_sys_path)
+    # add_magic_num_1_2(tar_sys_path)
     synced_files, processed_files = add_magic_num_3(tar_sys_path, sync = True)
     with open(dye_info_path, "w") as f:
         f.write(f"dye path : {tar_sys_path}\n")

@@ -2,7 +2,6 @@ sudo apt-get -y update
 sudo apt-get -y install git fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison
 sudo apt-get -y install libjpeg-dev
 sudo apt-get -y install python3-pip
-sudo apt-get -y install f2fs-tools
 pip3 install -r requirements.txt
 sudo apt-get -y install blktrace
 # get current file path
@@ -20,3 +19,22 @@ make -j$NUM_CPUS && sudo bash modinstall.sh
 
 # go to DIR/ and run make
 cd $DIR/ && make
+
+# I don't know why this is needed, but some certain libraries are not installed 
+# if you directly install f2fs-tools 16.0
+sudo apt -y install f2fs-tools
+sudo apt -y remove f2fs-tools
+
+wget https://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs-tools.git/snapshot/f2fs-tools-1.16.0.tar.gz
+tar -xzf f2fs-tools-1.16.0.tar.gz
+sudo apt-get -y install uuid-dev autoconf libtool libselinux1-dev
+cd f2fs-tools-1.16.0
+./autogen.sh
+./configure
+make
+sudo make install
+# cleanup f2fs install packages
+cd ../
+sudo rm -rf f2fs-tools-1.16.0
+sudo rm f2fs-tools-1.16.0.tar.gz
+
