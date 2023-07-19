@@ -25,7 +25,7 @@ int main() {
     int num_blocks = get_blocks(blocks, MAX_BLCOKS);
     int num_files = get_filenames(filenames, MAX_FILES);
     // std::cout << "num_blocks: " << num_blocks << " " << "num_files: " << num_files << std::endl;
-    dump_blocks_f2fs(blocks, num_blocks, (const char**)filenames, num_files);
-    // general_dump_blocks(blocks, num_blocks);
+    // dump_blocks_f2fs(blocks, num_blocks, (const char**)filenames, num_files);
+    general_dump_blocks(blocks, num_blocks);
     return 0;
 }

@@ -91,7 +91,7 @@ int get_blocks(uint64_t* blocks, int limit) {
     for(int i = 0; i < ctrl.blk2file_size; i++) {
         blocks[i] = ctrl.blk2file[i];
     }
-    std::cout << "blk2file_size: " << ctrl.blk2file_size << std::endl;
+    // std::cout << "blk2file_size: " << ctrl.blk2file_size << std::endl;
     return ctrl.blk2file_size;
 }
 
