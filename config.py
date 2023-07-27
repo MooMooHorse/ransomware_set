@@ -26,7 +26,7 @@ FS_XFS = 4
 FS_BTRFS = 5
 FS_JBD   = 6
 
-cfs_type = FS_F2FS
+cfs_type = FS_XFS
 
 NORMAL_DISK = 0
 BACKUP_DISK = 1
@@ -187,7 +187,7 @@ def dispatch_rans_config(mode):
             # ACCESS  = ['R/R', 'R/S', 'S/R', 'S/S'] # access mode (random / sequential)
             # FSYNC = ['N', 'Y'] # whether to fsync (after rm / shred)
             # RWSPLIT = ['N' , 'Y'] # whether to split read and write
-            MODE = ['S', 'D']
+            MODE = ['O']
             TIMEOUT = ['10/10', '0/0']
             BLKNUM = ['50000/50000', '50000/100000']
             THREADS = ['8/8', '1/1']
@@ -353,6 +353,10 @@ def get_test_id():
     return test_id - BATCH_BASE + 1
 
 def get_test_file_names():
+    """get names of files we injected.
+    Injected files : test files (at most ~100 MB currently to keep testing efficient)
+    We only target(probe) injected files.
+    """
     with open(test_id_path, 'r') as f:
         test_id = int(f.readline().strip())
         with open(os.path.join(impression_log_dir,'log-' + str(test_id)), 'r') as f:
@@ -363,6 +367,17 @@ def get_test_file_names():
                 if len(fname) > 0:
                     print(fname)
             
+def get_test_file_paths():
+    """get paths of files we injected.
+    """
+    with open(test_id_path, 'r') as f:
+        test_id = int(f.readline().strip())
+        with open(os.path.join(impression_log_dir,'log-' + str(test_id)), 'r') as f:
+            lines = f.readlines()
+            for line in lines:
+                fpath = line.split(' ')[4].rstrip('\n')
+                if len(fpath) > 0:
+                    print(fpath)
 
 def main():
     args = []
@@ -400,6 +415,8 @@ def main():
             dispatch_rans_config(MODE_FROM_SCRATCH)
         elif arg.startswith("-getfilenames"):
             get_test_file_names()
+        elif arg.startswith("-getfilepaths"):
+            get_test_file_paths()
         else:
             print("Invalid flag:", arg)
             sys.exit(1)

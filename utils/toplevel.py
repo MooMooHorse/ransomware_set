@@ -52,7 +52,7 @@ def mount_dev(dev_path, mount_path, cfs_type):
     elif cfs_type == FS_NTFS:
         os.system(f"sudo mkfs.ntfs -f {dev_path} && sudo mount -t ntfs {dev_path} {mount_path}")
     elif cfs_type == FS_F2FS:
-        os.system(f"sudo mkfs.f2fs -f {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
+        os.system(f"sudo mkfs.f2fs -f -t 1 {dev_path} && sudo mount -t f2fs {dev_path} {mount_path}")
     elif cfs_type == FS_EXT2:
         os.system(f"sudo mkfs.ext2 -f {dev_path} && sudo mount -t ext2 {dev_path} {mount_path}")
     elif cfs_type == FS_XFS:

@@ -44,6 +44,10 @@ int BIO_Cache::is_rans_on() {
     return this->rans_on;
 }
 
+/**
+ * @note : if ransomware isn't turned on in framework.cpp, 
+ * then we only put encrypted blocks into rb tree.
+*/
 int64_t BIO_Cache::rb_tree_alloc_and_insert(struct rb_root* root, uint64_t lsa, struct rb_node** node) {
     struct rb_node** _new;
     struct rb_node* parent = NULL;
