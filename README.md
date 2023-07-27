@@ -1,20 +1,49 @@
----
-marp : true
----
-<style>
-img[alt~="center"] {
-  display: block;
-  margin: 0 auto;
-}
-</style>
-
 # Ransomware Testing Framework
 
----
 
-## Project Code Base Structure
+## Project Code Basic Structure
 
----
+```
+.
+├── config.py
+├── core
+├── debug
+├── docs
+├── f2fs-tools-1.16.0
+├── img
+├── imgs
+├── impressions
+├── install.sh
+├── linux
+├── Makefile
+├── README.md
+├── requirements.txt
+├── run.py
+└── utils
+```
+
+* `config.py` configurations
+* `debug` debug files
+* `docs` documents
+* `f2fs-tools-1.16.0` f2fs-tools
+* `img` images
+* `imgs` drawio src files
+* `impressions` a module used to generate storage system's image for ransomware
+* `install.sh` installation script
+* `linux` linux kernel containing a part of tracing
+* `Makefile` makefile for core functions
+* `requirements.txt` python requirements
+* `run.py` wrapper for running our framework
+* `utils` utilities
+  * `core` core functions
+    * Running the trace
+    * Maintaining a rb tree to record the recoverability
+    * Log files (refer to `config.py`)
+  * `cryptosoft` ransomware
+  * `preprocess` preprocessing testing files
+  * `syscall` get blk2file mapping (source code & binaries in bin/ folder)
+  * `toplevel` top level functions (called by `run.py`)
+
 
 ### Configurations
 
@@ -23,9 +52,37 @@ All configurations are in `config.py` file.
 `config.py` files are in 2 parts. 
 
 * Paths to different files (using absolute paths)
-* Functions to get configurations.
+* Functions to get configurations (see `main` function to call them)
 
----
+In order to use config files, you need to first edit `framework_dir = "/home/h/rans_test`, 
+replacing `h` with your username. 
+
+The testing space is under this `framework_dir` folder.
+
+#### `framework_dir` structure
+
+```
+.
+├── blktrace
+├── logs
+|   ├── logs_100001
+|   ├── logs_100002
+|   ├── ...
+|   ├── test_dir_path
+|   ├── test_id
+|   └── trace_path
+├── rans_config
+|   ├── rans_repos
+|   ├── rans_tested
+|   ├── sys_repos
+|   └── sys_tested
+└── tar_sys
+    ├── 1/
+    ├── 3/
+    ├── ...
+    ├── injected/
+    └── lots_of_files.ext
+```
 
 ### Calling Trace
 
@@ -38,119 +95,19 @@ All configurations are in `config.py` file.
 * `utils/core/*cpp` Update rb tree to calcuate final result (# clean blocks remaining)
 * `utils/toplevel.py` initiate another test
 
----
+#### Procedure
 
-## Overview of Ransomware Pattern
+To test local storage system, we conduct the following steps:
+* Creating file system image. By file system image, according to this [paper](https://www.usenix.org/legacy/events/fast09/tech/full_papers/agrawal/agrawal.pdf), we mean the a state combining in-memory and on-disk layout of a storage system. For instanace, the status of the cache and how fragmented the files are in disk both contribute to the file system image. 
+* Inject testing files into the system. Because original file system image is too large and might be sensitive to work on, it's important to only operate on the files that we injected to obtain insights. In order to better draw conclusions from the injected files, the injected files need to be representitive and diverse.
+* Obtain file2blk & blk2file mappings to gain a set of blocks that relate to the injected files.
+* Maintain a Red-Black Tree to record these blocks. Originally, these blocks are marked as clean / recoverable.
+* Run a version of ransomware against the injected files. Record the block trace in background.
+* Analyze the block trace. If a block to be encrypted is associated with a block related to injected files, we find the corresponding node on Red-Black Tree and we mark it as unrecoverable.
+* Finally we calculate the recoverability of the storage system by looking at the ratio between `# clean block after ransomware attack` and `# clean blocks before ransomware attack`.
 
-[Report](https://crimesciencejournal.biomedcentral.com/articles/10.1186/s40163-019-0097-9)
+During the process above, only the blocks associated with injected files are checked and no disk-scan is taking place.
 
+We automatically change the injected files' pattern and the ransomware version (by changing a set of parameters) to obtain different recoverability.
 
-![center](img/lit01.png)
-
-
----
-
-
-# Testing Framework Structure
-
-For banks, hospitals, private PC, etc. they store files in their system (our target system).
-
-Ransomware reads files in our target system, encrypt it, then overwrite them(in-place or delte then create new copies).
-
-The testing framework detects how susceptible the target system is to ransomware.
-
-It collects data in **target system** (preprocessing), **FS filter** (VFS in Linux) layer as well as **BIO layer**. It also optionally collects data with **standardized ransomware** to illustrate the pattern of attack and verify the sanity of other satistics.
-
----
-
-![w:1080 center rans01](img/rans01.png)
-
----
-
-## Standardized Ransomware (encryption and deletion)
-
-
----
-
-![center rans02](img/rans02.png)
-
----
-
-## Target System (fingerprinting)
-
-
----
-
-![center rans04](img/rans04.png)
-
-
----
-
-
-## Statistics
-
-
-
----
-
-![center rans03](img/rans03.png)
-
----
-
-## Data Structure
-
----
-
-![center h:650 rans05](img/rans05.png)
-
----
-
-# Basic Implementation
-
----
-
-## Clone target system, and backup to a safe place
-
----
-
-## Migrate / Prepare Target System & Preprocess `tar_sys_info` 
-
----
-
-## Add magic numbers to files in target file system
-
-![center rans06](img/rans06.png)
-
-MAGIC number should be 8 bytes (to avoid collision) to help BIO layer gather more information more easily.
-
----
-
-
-
-## Launch standardized ransomware, with `rans_info` prepared
-
----
-
-## When running ransomware
-
-* In standardized ransomware, fill in `stat_fs_filt`
-* In BIO, fill in `stat_BIO`.
-
-[BIO tracing in Linux](https://www.ibm.com/docs/en/linux-on-systems?topic=blktrace-data-io-requests)
-
-
----
-
-
-## Currently implemented
-
-* Tracing and Logging for EXT(2,3,4), XFS, F2FS, NTFS, BtrFS (without RAID) in BIO layers utilizing different existing tools.
-* Automation for different injected pattern and target systems.
-* A preliminary version of configurable and standardized ransomware.
-
-
----
-
-## TO DO
-
-* Complete different features within ransomwares.
+Eventually, we obtain a set of $\text{parameters} \rightarrow \text{recoverability}$ mapping. We use [Decision Tree](https://scikit-learn.org/stable/modules/tree.html) to obtain the relation between `version of ransomware` and `the recoverability`, and we can also know the relation between injected files' pattern and recoverability.
