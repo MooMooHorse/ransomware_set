@@ -20,10 +20,13 @@ bash install.sh
 python3 run.py
 ```
 
-### Adjust test parameters by editing rans_test/rans_config/ 
+### Adjust test parameters by editing rans_test/rans_config/
 * sys_repos / rans_repos contain parameters related to injected files / ransomware
 * sys_tested / rans_tested contain parameters that have been tested
-
+* `cfs_type = FS_XFS` to specify the storage system to test
+* `'dev_list' : ['/dev/vdb', '/dev/vdc', '/dev/vdd', '/dev/vde']` to match your device 
+  * I used 4 SSDs, where vdb should be > 15 GB
+  * `NORMAL_DISK = 0` `BACKUP_DISK = 1` are used to specify which disk in the `dev_list` is used for normal storage and which is used for backup storage. Currently I use the first disk for normal storage and the second disk for backup storage.
 ## Project Code Basic Structure
 
 ```
