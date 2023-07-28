@@ -248,6 +248,12 @@ def get_sys_config(mode):
     Read from sys_config_repos to get a config, and put it into sys_config_tested.
     We need to remove the config from sys_config_repos after we get it.
     """
+    if not os.path.isfile(sys_config_repos):
+        with open(sys_config_tested, 'w') as f:
+            pass
+        with open(sys_config_repos, 'w') as f:
+            f.write(f"10 GB 9.28 0.5 1%\n")
+    
     if mode == MODE_SEQ:
         config = None
         with open(sys_config_repos, 'r') as f:

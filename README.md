@@ -1,6 +1,29 @@
 # Ransomware Testing Framework
 
 
+## How to Run
+
+### Installation proper packages
+
+```bash
+bash install.sh
+```
+
+### Configure `config.py`
+
+* Edit `framework_dir`
+
+### Run 
+
+```
+# now you're at ransomware_set/
+python3 run.py
+```
+
+### Adjust test parameters by editing rans_test/rans_config/ 
+* sys_repos / rans_repos contain parameters related to injected files / ransomware
+* sys_tested / rans_tested contain parameters that have been tested
+
 ## Project Code Basic Structure
 
 ```
