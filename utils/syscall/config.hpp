@@ -19,6 +19,10 @@
 
 #include "sys.h"
 
+int file_exits(const char* path) {
+    return access(path, F_OK) != -1;
+}
+
 void dbg_dump_filenames(char** filenames, int limit) {
     for(int i = 0; i < limit; i++) {
         std::cout << filenames[i] << std::endl;

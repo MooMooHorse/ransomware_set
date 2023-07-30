@@ -174,9 +174,9 @@ def prepare_tar_sys(tar_sys_path, _totsize, _mu, _fragscore, batch_ind, injected
         # os.system("echo 3 | sudo tee /proc/sys/vm/drop_caches")
         os.system(core_path + f" -path={config_file_path}" + f" -id={test_id + BATCH_BASE}")
 
-        os.system(clear_record_bin)
+        # os.system(clear_record_bin)
         
-        os.system("sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches")
+        # os.system("sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches")
         
         test_id += 1
         
@@ -226,6 +226,9 @@ def handle_flags(tar_sys_path, backup_dir_path):
                     
             # print(f"sudo rm -rf {framework_dir}/!\({config_dir_name}\)")
             os.system(f"python3 {impression_gen_path} --clean")
+            sys_config_repos = PATHS["sys_config_repos"]
+            sys_config_tested = PATHS["sys_config_tested"]
+            os.system(f"sudo rm -rf {sys_config_repos} {sys_config_tested}")
             sys.exit(0)
         else:
             print("Invalid flag:", arg)

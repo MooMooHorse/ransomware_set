@@ -19,9 +19,7 @@
 
 #include "config.hpp"
 
-int file_exits(const char* path) {
-    return access(path, F_OK) != -1;
-}
+
 
 int xfs_get_blocks(char** filepaths, int num_files, uint64_t* blocks, int max_blocks) {
     int j = 0; // cnt for blocks
